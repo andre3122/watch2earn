@@ -1,0 +1,17 @@
+{
+  "name": "tele-watch2earn-monetag-miniapp",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node index.js",
+    "start": "NODE_ENV=production node index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "telegraf": "^4.16.3",
+    "nanoid": "^5.0.7"
+  }
+}
