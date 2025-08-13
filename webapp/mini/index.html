@@ -3,40 +3,55 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Monetag Pre‑roll — Mini App</title>
+  <title>Watch-to-Earn — Mini App</title>
+
+  <!-- Telegram Mini App SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <!-- Fluid Player + VAST -->
   <link rel="preconnect" href="https://cdn.fluidplayer.com" crossorigin>
   <script defer src="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js"></script>
+
+  <!-- Interstitial (libtl) — gunakan HTTPS -->
+  <script src="https://libtl.com/sdk.js" data-zone="9711117" data-sdk="show_9711117"></script>
+
   <style>
     :root{--bg:#0b0f14;--card:#121821;--fg:#e6eef5;--muted:#9fb3c8;--accent:#64d2ff}
     *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--fg)}
     .wrap{max-width:820px;margin:0 auto;padding:16px}
     .card{background:var(--card);border:1px solid #1b2838;border-radius:16px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.35);margin-bottom:12px}
     button{appearance:none;border:0;border-radius:12px;padding:12px 16px;background:#1c2736;color:#e5f3ff;font-weight:700;cursor:pointer}
+    button[disabled]{opacity:.6;cursor:not-allowed}
     video{width:100%;border-radius:12px;border:1px solid #1b2838}
     .muted{color:#9fb3c8}
     input{width:100%;background:#0e1420;border:1px solid #1e2a3a;border-radius:10px;padding:12px;color:#e6eef5}
     .title{font-weight:800}
+    .btnrow{display:flex;gap:8px;flex-wrap:wrap}
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card">
-      <div class="title">Watch‑to‑Earn (Monetag VAST)</div>
+      <div class="title">Watch-to-Earn</div>
       <div id="info" class="muted">Mengambil konfigurasi…</div>
     </div>
 
     <div class="card" id="taskCard">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
-        <div>
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+        <div style="min-width:240px">
           <div class="title">Tugas Nonton</div>
-          <div class="muted">Pre‑roll Monetag. Setelah iklan selesai, reward otomatis dikredit.</div>
+          <div class="muted">Pilih mode iklan. Monetag (VAST) kasih reward otomatis saat iklan selesai.</div>
         </div>
-        <button id="start">Mulai ▶️</button>
+        <div class="btnrow">
+          <button id="start">Monetag ▶️</button>
+          <button id="startPop">Rewarded Popup</button>
+          <button id="startInt">Rewarded Interstitial</button>
+        </div>
       </div>
+
       <div id="playerWrap" style="margin-top:12px;display:none">
-        <video id="player" controls preload="metadata"></video>
-        <div class="muted" style="margin-top:8px">Fallback waktu tonton: <span id="prog">0</span>s / <span id="need">15</span>s</div>
+        <video id="player" controls preload="metadata" playsinline webkit-playsinline></video>
+        <div class="muted" style="margin-top:8px">Fallback: <span id="prog">0</span>s / <span id="need">15</span>s</div>
       </div>
     </div>
 
@@ -56,6 +71,8 @@
 
     const info = document.getElementById('info')
     const startBtn = document.getElementById('start')
+    const startPopBtn = document.getElementById('startPop')
+    const startIntBtn = document.getElementById('startInt')
     const wrap = document.getElementById('playerWrap')
     const v = document.getElementById('player')
     const prog = document.getElementById('prog')
@@ -65,7 +82,7 @@
     const wdBtn = document.getElementById('wd')
 
     let cfg = { vastTag:'', reward:0.01, min_withdraw:1 }
-    let minWatch = 15, watched = 0, lastT = 0, taskId = null, fp = null, adDone = false
+    let minWatch = 15, watched = 0, lastT = 0, taskId = null, fp = null, adDone = false, starting = false
 
     async function post(url, body){
       const r = await fetch(url,{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)})
@@ -80,51 +97,110 @@
       wdInfo.textContent = `Minimal: ${d.min_withdraw} USDT`
     }
 
+    // ------ Monetag VAST (reward via adEnded) ------
     startBtn.addEventListener('click', async ()=>{
-      if(!cfg.vastTag){ tg.showPopup({title:'Konfigurasi', message:'VAST tag belum diset di server.', buttons:[{type:'ok'}]}); return }
-      const d = await post('/api/task/start', { initData })
-      if(!d.ok){ tg.showPopup({title:'Gagal', message:d.error||'unknown', buttons:[{type:'ok'}]}); return }
-      taskId = d.task_id; minWatch = d.min_watch_sec || 15; need.textContent = String(minWatch)
-      wrap.style.display = 'block'
-
-      // Init Fluid Player with VAST preRoll
-      // Provide a tiny MP4 (1px) or empty source; Fluid needs a <video> source
-      v.innerHTML = '<source src="data:video/mp4;base64," type="video/mp4">'
-      if (fp && fp.destroy) { try{ fp.destroy() }catch(e){} }
-      fp = fluidPlayer('player', {
-        layoutControls: { fillToContainer:true, allowDownload:false, playbackRateEnabled:false },
-        vastOptions: {
-          adList: [{ roll:'preRoll', vastTag: cfg.vastTag, skippable: true }],
-          vpaidMode: 'INSECURE',
-          maxAllowedVastTagRedirects: 5,
+      if(starting) return; starting = true; startBtn.disabled = true
+      try {
+        if(!cfg.vastTag){
+          tg.showPopup({title:'Konfigurasi', message:'VAST tag belum diset di server.', buttons:[{type:'ok'}]})
+          return
         }
-      })
+        const d = await post('/api/task/start', { initData })
+        if(!d.ok){ tg.showPopup({title:'Gagal', message:d.error||'unknown', buttons:[{type:'ok'}]}); return }
+        taskId = d.task_id; minWatch = d.min_watch_sec || 15; need.textContent = String(minWatch)
+        wrap.style.display = 'block'
 
-      // When ad ends => complete task
-      fp.on('adEnded', async ()=>{
-        if (adDone) return; adDone = true
-        const res = await post('/api/task/complete', { initData, task_id: taskId })
-        if(res.ok){ tg.showPopup({title:'Berhasil', message:`+${cfg.reward} USDT dikredit.`, buttons:[{type:'ok'}]}); await loadConfig() }
-        else { tg.showPopup({title:'Gagal', message: res.error||'unknown', buttons:[{type:'ok'}]}) }
-      })
+        // Init Fluid Player VAST preRoll
+        v.innerHTML = '<source src="data:video/mp4;base64," type="video/mp4">'
+        if (fp && fp.destroy) { try{ fp.destroy() }catch(e){} }
+        fp = fluidPlayer('player', {
+          layoutControls: { fillToContainer:true, allowDownload:false, playbackRateEnabled:false },
+          vastOptions: {
+            adList: [{ roll:'preRoll', vastTag: cfg.vastTag, skippable: true }],
+            vpaidMode: 'INSECURE',
+            maxAllowedVastTagRedirects: 5
+          }
+        })
 
-      // Fallback timer if ad blocked
-      watched = 0; lastT = 0; prog.textContent = '0'
-      v.addEventListener('timeupdate', ()=>{
-        const dt = Math.max(0, v.currentTime - lastT); lastT = v.currentTime
-        if (document.visibilityState === 'visible' && !v.paused) watched += dt
-        prog.textContent = String(Math.floor(watched))
-        if (!adDone && watched >= minWatch) {
-          adDone = true
-          post('/api/task/complete', { initData, task_id: taskId }).then(async res=>{
-            if(res.ok){ tg.showPopup({title:'Berhasil', message:`+${cfg.reward} USDT (fallback).`, buttons:[{type:'ok'}]}); await loadConfig() }
-            else { tg.showPopup({title:'Gagal', message: res.error||'unknown', buttons:[{type:'ok'}]}) }
-          })
-        }
-      }, { once:false })
-      try{ await v.play() }catch(e){}
+        // Kredit saat iklan selesai
+        fp.on('adEnded', async ()=>{
+          if (adDone) return; adDone = true
+          const res = await post('/api/task/complete', { initData, task_id: taskId })
+          if(res.ok){ tg.showPopup({title:'Berhasil', message:`+${cfg.reward} USDT dikredit.`, buttons:[{type:'ok'}]}); await loadConfig() }
+          else { tg.showPopup({title:'Gagal', message: res.error||'unknown', buttons:[{type:'ok'}]}) }
+          startBtn.disabled = false; starting = false
+        })
+
+        // Fallback timer bila iklan terblokir
+        watched = 0; lastT = 0; prog.textContent = '0'
+        v.addEventListener('timeupdate', ()=>{
+          const dt = Math.max(0, v.currentTime - lastT); lastT = v.currentTime
+          if (document.visibilityState === 'visible' && !v.paused) watched += dt
+          prog.textContent = String(Math.floor(watched))
+          if (!adDone && watched >= minWatch) {
+            adDone = true
+            post('/api/task/complete', { initData, task_id: taskId }).then(async res=>{
+              if(res.ok){ tg.showPopup({title:'Berhasil', message:`+${cfg.reward} USDT (fallback).`, buttons:[{type:'ok'}]}); await loadConfig() }
+              else { tg.showPopup({title:'Gagal', message: res.error||'unknown', buttons:[{type:'ok'}]}) }
+              startBtn.disabled = false; starting = false
+            })
+          }
+        })
+        try{ await v.play() }catch(e){}
+      } finally {
+        if(!wrap.style.display || wrap.style.display==='none'){ startBtn.disabled = false; starting = false }
+      }
     })
 
+    // ------ libtl: auto inApp interstitial (tanpa reward) ------
+    if (window.show_9711117) {
+      try {
+        show_9711117({
+          type: 'inApp',
+          inAppSettings: {
+            frequency: 2,   // 2 iklan
+            capping: 0.1,   // dalam 0.1 jam (6 menit)
+            interval: 30,   // jeda 30 detik
+            timeout: 5,     // delay 5 detik sebelum iklan pertama
+            everyPage: false
+          }
+        })
+      } catch(e){}
+    }
+
+    // ------ libtl: Rewarded Popup ------
+    startPopBtn.addEventListener('click', async ()=>{
+      if (!window.show_9711117) { tg.showPopup({title:'Iklan', message:'SDK libtl belum siap.', buttons:[{type:'ok'}]}); return }
+      const d = await post('/api/task/start', { initData })
+      if(!d.ok){ tg.showPopup({title:'Gagal', message:d.error||'unknown', buttons:[{type:'ok'}]}); return }
+      const id = d.task_id
+      try {
+        await show_9711117('pop') // resolve saat selesai/close
+        const res = await post('/api/task/complete', { initData, task_id: id })
+        if (res.ok) { tg.showPopup({title:'Berhasil', message:'+reward dikredit (popup).', buttons:[{type:'ok'}]}); await loadConfig() }
+        else { tg.showPopup({title:'Gagal', message: res.error||'unknown', buttons:[{type:'ok'}]}) }
+      } catch {
+        tg.showPopup({title:'Iklan', message:'Iklan batal/gagal.', buttons:[{type:'ok'}]})
+      }
+    })
+
+    // ------ libtl: Rewarded Interstitial ------
+    startIntBtn.addEventListener('click', async ()=>{
+      if (!window.show_9711117) { tg.showPopup({title:'Iklan', message:'SDK libtl belum siap.', buttons:[{type:'ok'}]}); return }
+      const d = await post('/api/task/start', { initData })
+      if(!d.ok){ tg.showPopup({title:'Gagal', message:d.error||'unknown', buttons:[{type:'ok'}]}); return }
+      const id = d.task_id
+      try {
+        await show_9711117() // resolve saat user selesai nonton
+        const res = await post('/api/task/complete', { initData, task_id: id })
+        if (res.ok) { tg.showPopup({title:'Berhasil', message:'+reward dikredit (interstitial).', buttons:[{type:'ok'}]}); await loadConfig() }
+        else { tg.showPopup({title:'Gagal', message: res.error||'unknown', buttons:[{type:'ok'}]}) }
+      } catch {
+        tg.showPopup({title:'Iklan', message:'Iklan batal/gagal.', buttons:[{type:'ok'}]})
+      }
+    })
+
+    // ------ Withdraw ------
     wdBtn.addEventListener('click', async ()=>{
       const d = await post('/api/withdraw', { initData, address: addr.value.trim() })
       if(d.ok){ tg.showPopup({title:'Withdraw', message:`Permintaan ${d.amount} USDT dibuat (pending).`, buttons:[{type:'ok'}]}) }
