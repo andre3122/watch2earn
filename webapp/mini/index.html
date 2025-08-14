@@ -79,6 +79,9 @@
   .hint{font-size:13px;color:var(--muted);margin-top:6px}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
   .hidden{display:none}
+  /* avoid flash before init */
+html{visibility:hidden}
+html.init-ready{visibility:visible}
 </style>
 </head>
 <body>
