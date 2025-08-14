@@ -84,6 +84,15 @@ CREATE TABLE IF NOT EXISTS transactions (
   meta TEXT,
   created_at TEXT DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS postbacks (
+  id INTEGER PRIMARY KEY,
+  reqid TEXT UNIQUE,        -- id unik event dari Monetag
+  tg_id INTEGER,            -- telegram user id
+  is_paid INTEGER,          -- 1 kalau berbayar
+  amount REAL,              -- estimated_price dari Monetag (atau 0)
+  raw TEXT,                 -- seluruh query utk debugging
+  created_at TEXT DEFAULT (datetime('now'))
+);
 `)
 
 function getOrCreateUserFromTG(user, referred_by_code=null) {
@@ -213,5 +222,43 @@ app.post('/api/withdraw', (req, res) => {
   db.prepare('INSERT INTO withdrawals (tg_id, amount, address, status) VALUES (?,?,?,?)').run(me.tg_id, amt, address, 'pending')
   res.json({ ok:true, amount: amt })
 })
+
+// === Route postback Monetag ===
+app.get('/postback/monetag', (req, res) => {
+    const token = req.query.token;
+    if (token !== process.env.POSTBACK_TOKEN) {
+        return res.status(403).send('Forbidden');
+    }
+
+    const { reqid, telegram_id, estimated_price, is_paid } = req.query;
+
+    if (!reqid || !telegram_id) return res.status(400).send('Missing params');
+
+    try {
+        // Cek duplicate postback
+        const exists = db.prepare('SELECT 1 FROM postbacks WHERE reqid = ?').get(reqid);
+        if (exists) return res.status(200).send('Duplicate ignored');
+
+        // Simpan log
+        db.prepare('INSERT INTO postbacks (reqid, tg_id, is_paid, amount, raw) VALUES (?,?,?,?,?)')
+            .run(reqid, telegram_id, is_paid ? 1 : 0, estimated_price || 0, JSON.stringify(req.query));
+
+        // Kalau event berbayar → kredit saldo user
+        if (parseInt(is_paid) === 1) {
+            db.prepare('UPDATE users SET balance = balance + ? WHERE tg_id = ?')
+                .run(estimated_price || 0, telegram_id);
+        }
+
+        res.status(200).send('OK');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error');
+    }
+});
+
+// === Withdraw ===
+app.post('/api/withdraw', (req, res) => {
+    ...
+});
 
 app.listen(PORT, () => console.log('Server on', PORT))
