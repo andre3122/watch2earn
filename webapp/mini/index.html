@@ -6,7 +6,7 @@
 <title>Watch2Earn</title>
 <link rel="preconnect" href="https://cdn.fluidplayer.com" crossorigin>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script defer src="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js"></script>
+<script defer src="https://cdn/fluidplayer.com/v3/current/fluidplayer.min.js"></script>
 <!-- Monetag Mini App SDK (ubah data-zone ke milikmu) -->
 <script src="//libtl.com/sdk.js" data-zone="9711117" data-sdk="show_9711117"></script>
 <style>
@@ -46,6 +46,9 @@
   .g2{grid-template-columns:repeat(2,1fr)}
   .g3{grid-template-columns:repeat(3,1fr)}
   @media (min-width:600px){ .g3-lg{grid-template-columns:repeat(3,1fr)} }
+
+  /* Simple vertical stack */
+  .stack{display:flex;flex-direction:column;gap:10px}
 
   /* Check-in card (colorful) */
   .checkin{background:linear-gradient(135deg,#8fd3f4,#c793ff 40%,#f8ae55);color:#0b1220}
@@ -140,9 +143,13 @@
       <div class="card">
         <h3>Ads Task</h3>
         <div class="muted">Start a task and watch till completion to earn rewards.</div>
+
+        <!-- Stream Task -->
         <div class="card" style="margin-top:12px">
-          <div class="between"><div class="title">Stream Task (Video)</div>
-            <div class="muted">Fallback: <span id="fallbackNeed">15</span>s</div></div>
+          <div class="between">
+            <div class="title">Stream Task (Video)</div>
+            <div class="muted">Fallback: <span id="fallbackNeed">15</span>s</div>
+          </div>
           <button class="btn primary block" id="btnStartStream">Start Task</button>
           <div id="playerWrap" class="hidden" style="margin-top:10px">
             <video id="player" controls preload="metadata"></video>
@@ -150,12 +157,13 @@
         </div>
       </div>
 
+      <!-- Completed Tasks (3 baris besar full-width) -->
       <div class="card">
         <h3>Completed Tasks</h3>
-        <div class="grid g3 g3-lg" style="margin-top:8px">
-          <button class="btn primary" id="btnRewPopup">Rewarded Popup</button>
-          <button class="btn primary" id="btnRewInter">Rewarded Interstitial</button>
-          <button class="btn primary" id="btnInApp">In-app Interstitial</button>
+        <div class="stack" style="margin-top:8px">
+          <button class="btn primary block" id="btnRewPopup">Rewarded Popup</button>
+          <button class="btn primary block" id="btnRewInter">Rewarded Interstitial</button>
+          <button class="btn primary block" id="btnInApp">In-app Interstitial</button>
         </div>
       </div>
     </section>
@@ -218,15 +226,15 @@
   const tg = window.Telegram?.WebApp;
   tg && tg.expand();
 
-  // === CONFIG (ubah sesuai kebutuhan) ===
+  // === CONFIG ===
   const BOT_USERNAME = 'watch2earnreal_bot'; // ganti dengan bot kamu
   const REWARD_PER_TASK = 0.01;
   const REF_BONUS_PCT = 17; // untuk teks saja
   const MIN_WITHDRAW = 1;
-  const VAST_TAG = ''; // isi kalau sudah punya VAST URL untuk pre-roll (opsional)
+  const VAST_TAG = ''; // isi jika punya VAST URL (opsional)
   const FALLBACK_SEC = 15;
 
-  // === STATE (persist di localStorage) ===
+  // === STATE (localStorage) ===
   const LSKEY = 'w2e_state_v2';
   const state = loadState();
   function loadState(){
@@ -289,7 +297,6 @@
     const last = state.lastCheck;
     const t = todayStr();
     const canClaim = (last!==t);
-    const idx = Math.min(state.streak, 7)-1;
     const progress = Math.min(state.streak/7,1)*100;
     bar.style.width = progress + '%';
     claimAmt.textContent = '+' + dayRewards[(state.streak)%7].toFixed(2);
