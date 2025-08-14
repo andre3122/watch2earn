@@ -1,87 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1"/>
 <title>Watch2Earn</title>
 <link rel="preconnect" href="https://cdn.fluidplayer.com" crossorigin>
 <link rel="stylesheet" href="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.css">
 <style>
 :root{
-  --bg:#f7f9fc; --card:#ffffff; --muted:#637083; --fg:#0f172a; --line:#e6ebf2;
-  --grad1:#6ea8ff; --grad2:#6ef3c5; --brand:#1453ff;
-  --navH:72px; --radius:16px; --shadow:0 10px 24px rgba(15,23,42,.06);
+  --bg:#f7f9fc; --card:#ffffff; --line:#e6ebf2; --fg:#0f172a; --muted:#64748b;
+  --grad1:#6ea8ff; --grad2:#6ef3c5; --navH:72px; --radius:16px; --shadow:0 10px 24px rgba(15,23,42,.06);
 }
-*{box-sizing:border-box}
-html,body{height:100%}
-body{
-  margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,Arial;
-  color:var(--fg); background:var(--bg);
-  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; text-rendering:optimizeLegibility;
-  padding-bottom:calc(var(--navH) + env(safe-area-inset-bottom));
-}
+*{box-sizing:border-box} html,body{height:100%}
+body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--fg);
+  padding-bottom:calc(var(--navH) + env(safe-area-inset-bottom));-webkit-font-smoothing:antialiased}
 .app{max-width:min(1000px,100%);margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
 
 /* Header */
 .header{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line)}
 .header .row{display:flex;align-items:center;gap:clamp(8px,2vw,14px);padding:12px clamp(12px,3vw,16px)}
 .brand{display:flex;align-items:center;gap:10px;min-width:0}
-.logo{width:38px;height:38px;border-radius:12px;background:linear-gradient(145deg,var(--grad1),var(--grad2));display:grid;place-items:center;color:#073b2d;font-weight:800;box-shadow:0 8px 24px rgba(80,130,255,.25)}
+.logo{width:38px;height:38px;border-radius:12px;background:linear-gradient(145deg,var(--grad1),var(--grad2));display:grid;place-items:center;font-weight:800;color:#073b2d;box-shadow:0 8px 24px rgba(80,130,255,.25)}
 .name{font-weight:800;font-size:clamp(14px,2.6vw,18px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.badge{margin-left:auto;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#3730a3;font-weight:700;font-size:12px}
+.badge{margin-left:auto;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#1e293b;font-weight:700;font-size:12px}
 
 /* Content & cards */
 .content{padding:clamp(12px,3vw,16px);flex:1}
-.page{display:none}
-.page.active{display:block}
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:clamp(12px,3vw,16px);box-shadow:var(--shadow);line-height:1.25;min-width:0}
-.card h3{margin:0 0 8px 0;font-size:clamp(14px,2.8vw,18px)}
-.helper{color:var(--muted);font-size:12px}
-
-/* Grid */
-.grid{display:grid;gap:clamp(8px,2.5vw,12px)}
-.grid.cols-2{grid-template-columns:1fr}
-@media(min-width:720px){ .grid.cols-2{grid-template-columns:1fr 1fr} }
+.page{display:none}.page.active{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:clamp(12px,3vw,16px);box-shadow:var(--shadow);line-height:1.25}
+.card h3{margin:0 0 8px 0;font-size:18px}
+.helper{color:var(--muted);font-size:13px}
 
 /* KPI */
-.kpi{display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(8px,2.5vw,12px)}
-@media(min-width:720px){ .kpi{grid-template-columns:repeat(4,1fr)} }
-.kpi .it{background:linear-gradient(180deg,#f8fbff,#f1f5ff);border:1px solid var(--line);border-radius:14px;padding:12px;min-width:0}
+.kpi{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media(min-width:720px){.kpi{grid-template-columns:repeat(4,1fr)}}
+.kpi .it{background:linear-gradient(180deg,#f8fbff,#f1f5ff);border:1px solid var(--line);border-radius:14px;padding:12px}
 .kpi .it small{color:var(--muted);display:block}
-.kpi .it b{font-size:clamp(16px,3.5vw,20px)}
+.kpi .it b{font-size:20px}
 
 /* Buttons & inputs */
-.btn{appearance:none;border:0;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;line-height:1.15;touch-action:manipulation}
+.btn{appearance:none;border:0;border-radius:12px;padding:14px 16px;font-weight:800;cursor:pointer;line-height:1.1}
 .btn.primary{background:linear-gradient(145deg,var(--grad1),var(--grad2));color:#073b2d}
 .btn.outline{background:#fff;border:1px solid var(--line);color:#0f172a}
-.btn.block{width:100%}
-.btn:active{transform:translateY(1px)}
-input{width:100%;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;color:#0f172a;line-height:1.15;min-height:44px}
-
-/* Title accent */
-.title-accent{font-weight:800;background:linear-gradient(145deg,var(--grad1),var(--grad2));-webkit-background-clip:text;background-clip:text;color:transparent}
-
-/* Video */
-.videoBox{display:none;margin-top:10px}
-.videoBox.show{display:block}
-video{width:100%;border-radius:14px;border:1px solid var(--line);background:#000}
+.btn.block{width:100%} .btn:active{transform:translateY(1px)}
+input{width:100%;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;min-height:44px}
 
 /* Bottom nav */
-.nav{position:fixed;left:0;right:0;bottom:0;z-index:10;background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
-.tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:8px clamp(8px,3vw,12px)}
-.tab{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px;border-radius:12px;color:#637083;font-size:12px;min-width:0;user-select:none}
+.nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:10}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:8px clamp(8px,3vw,12px)}
+.tab{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px;border-radius:12px;color:#64748b;font-size:12px}
 .tab.active{background:#eef2ff;color:#1e293b;border:1px solid var(--line)}
-.tab i{width:20px;height:20px;display:inline-grid;place-items:center;line-height:20px}
-.tab span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tab i{width:20px;height:20px;display:grid;place-items:center}
 
-/* Sheet (overlay) */
-.sheet{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.35);display:none;align-items:flex-end;pointer-events:none}
+/* Sheet */
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:flex-end;pointer-events:none;z-index:40}
 .sheet.show{display:flex;pointer-events:auto}
-.sheet .panel{background:#fff;border-top-left-radius:18px;border-top-right-radius:18px;width:100%;max-width:min(1000px,100%);margin:0 auto;padding:12px 12px calc(12px + env(safe-area-inset-bottom));box-shadow:0 -10px 24px rgba(0,0,0,.15)}
+.sheet .panel{background:#fff;border-top-left-radius:18px;border-top-right-radius:18px;width:100%;max-width:min(1000px,100%);
+  margin:0 auto;padding:12px 12px calc(12px + env(safe-area-inset-bottom))}
 .sheet .handle{width:44px;height:5px;border-radius:999px;background:#e5e7eb;margin:6px auto 12px}
-.sheet .panel h4{margin:0 0 8px 0}
 
-@media (prefers-reduced-motion: reduce){ .btn:active{transform:none} }
+/* Daily 1..7 boxes */
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:10px}
+.day{background:#fff;border:1px solid var(--line);border-radius:10px;height:56px;display:grid;place-items:center;font-weight:700;color:#334155}
+.day.done{background:linear-gradient(145deg,var(--grad1),var(--grad2));color:#073b2d;border-color:transparent}
+.small{font-size:12px;color:var(--muted)}
+video{width:100%;border-radius:14px;border:1px solid var(--line);background:#000}
 </style>
 </head>
 <body>
@@ -89,57 +72,70 @@ video{width:100%;border-radius:14px;border:1px solid var(--line);background:#000
   <!-- Header -->
   <header class="header">
     <div class="row">
-      <div class="brand">
-        <div class="logo">W2E</div>
-        <div class="name">Watch2Earn</div>
-      </div>
-      <div class="badge" id="uName">LIVE</div>
+      <div class="brand"><div class="logo">W2E</div><div class="name">Watch2Earn</div></div>
+      <div class="badge" id="uName">User</div>
     </div>
   </header>
 
-  <main class="content" id="main">
+  <main class="content">
     <!-- HOME -->
     <section id="home" class="page active">
-      <div class="kpi" role="status" aria-live="polite">
+      <div class="kpi">
         <div class="it"><small>Balance</small><b id="kpiBalance">0.00 USDT</b></div>
         <div class="it"><small>Total Earned</small><b id="kpiEarned">0.00 USDT</b></div>
         <div class="it"><small>Tasks Completed</small><b id="kpiTasks">0</b></div>
         <div class="it"><small>Daily Streak</small><b id="kpiStreak">0 🔥</b></div>
       </div>
 
-      <!-- Daily Check-in -->
       <div class="card" style="margin-top:16px">
-        <h3 class="title-accent">Daily Check-in Bonus</h3>
-        <p class="helper">Claim your daily reward and keep your streak!</p>
-        <button class="btn primary" id="btnCheckin" style="margin-top:8px">Claim Today</button>
-        <div class="helper" id="checkinNote" style="margin-top:8px"></div>
+        <h3>Daily Check-in</h3>
+        <div class="small">Keep your streak running! (Day <span id="streakDay">1</span>/7)</div>
+        <div class="days" id="days">
+          <div class="day" data-n="1">1</div>
+          <div class="day" data-n="2">2</div>
+          <div class="day" data-n="3">3</div>
+          <div class="day" data-n="4">4</div>
+          <div class="day" data-n="5">5</div>
+          <div class="day" data-n="6">6</div>
+          <div class="day" data-n="7">7</div>
+        </div>
+        <button class="btn primary" id="btnCheckin" style="margin-top:12px">Claim Today</button>
+        <div class="small" id="checkinNote" style="margin-top:6px"></div>
       </div>
     </section>
 
     <!-- ADS -->
-    <section id="ads" class="page" aria-label="Ads Tasks">
+    <section id="ads" class="page">
       <div class="card">
         <h3>Ads Task</h3>
-        <p class="helper">Start a task and watch till completion to earn rewards.</p>
+        <p class="small">Start a task and watch till completion to earn rewards.</p>
 
-        <div class="grid cols-2" style="margin-top:12px">
-          <!-- Stream Task -->
-          <div class="card" style="padding:12px">
-            <div class="title-accent">Stream Task (Video)</div>
-            <div class="helper">Watch a pre-roll ad, then continue the video.</div>
-            <button class="btn primary block" id="taskVastBtn" style="margin-top:10px">Start Task</button>
-            <div class="helper" style="margin-top:8px">Fallback: <span id="fbNow2">0</span>s / <span id="fbNeed2">15</span>s</div>
-          </div>
+        <!-- Row 1 -->
+        <div class="card" style="padding:12px;margin-top:12px">
+          <h3>Stream Task (Video)</h3>
+          <p class="small">Watch a pre-roll ad, then continue the video.</p>
+          <button class="btn primary block" id="taskVastBtn" style="margin-top:10px">Start Task</button>
+          <div class="small" style="margin-top:8px">Fallback: <span id="fbNow2">0</span>s / <span id="fbNeed2">15</span>s</div>
+        </div>
 
-          <!-- Completed / Rewarded formats -->
-          <div class="card" style="padding:12px">
-            <div class="title-accent">Completed Tasks</div>
-            <div id="recentWrap" class="helper">No tasks yet.</div>
-            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-              <button class="btn primary" id="taskPopBtn">Rewarded Popup</button>
-              <button class="btn primary" id="taskIntBtn">Interstitial</button>
-            </div>
-          </div>
+        <!-- Row 2 -->
+        <div class="card" style="padding:12px;margin-top:12px">
+          <h3>Rewarded Popup</h3>
+          <p class="small">Open a popup ad to get a reward.</p>
+          <button class="btn primary block" id="taskPopBtn" style="margin-top:10px">Start Task</button>
+        </div>
+
+        <!-- Row 3 -->
+        <div class="card" style="padding:12px;margin-top:12px">
+          <h3>Interstitial</h3>
+          <p class="small">Show interstitial ad to earn.</p>
+          <button class="btn primary block" id="taskIntBtn" style="margin-top:10px">Start Task</button>
+        </div>
+
+        <!-- Completed -->
+        <div class="card" style="padding:12px;margin-top:12px">
+          <h3>Completed Tasks</h3>
+          <div id="recentWrap" class="small">No tasks yet.</div>
         </div>
       </div>
     </section>
@@ -147,33 +143,33 @@ video{width:100%;border-radius:14px;border:1px solid var(--line);background:#000
     <!-- REFER -->
     <section id="refer" class="page">
       <div class="card">
-        <h3 class="title-accent">Refer & Earn</h3>
-        <p class="helper">Share your unique link. Earn <span id="refPct">15</span>% of friends' earnings forever.</p>
-        <div class="grid" style="margin-top:8px">
-          <input id="refLink" readonly value="" />
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn outline" id="btnCopy">Copy</button>
-            <a class="btn primary" id="btnShare" target="_blank" rel="noopener">Open in Telegram</a>
-          </div>
-        </div>
+        <h3>Refer & Earn</h3>
+        <p class="small">Earn <span id="refPct">15</span>% of your friends’ earnings for life.</p>
+        <input id="refLink" readonly value="" style="margin-top:8px"/>
+        <button class="btn outline" id="btnCopy" style="margin-top:8px">Copy Link</button>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <h3>Your Referrals</h3>
+        <div id="refList" class="small">No referrals yet.</div>
       </div>
     </section>
 
     <!-- PROFILE -->
     <section id="profile" class="page">
       <div class="card">
-        <h3 class="title-accent">Profile</h3>
+        <h3>Profile</h3>
         <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
-          <div>
-            <div id="pName" style="font-weight:800">User</div>
-            <div class="helper" id="pJoined"></div>
-          </div>
-          <div style="text-align:right">
-            <div class="helper">Balance</div>
-            <div id="pBalance" style="font-weight:800">0.00 USDT</div>
-          </div>
+          <div><div id="pName" style="font-weight:800">User</div></div>
+          <div style="text-align:right"><div class="small">Balance</div><div id="pBalance" style="font-weight:800">0.00 USDT</div></div>
         </div>
-        <button class="btn outline" id="btnRefresh" style="margin-top:10px">Refresh</button>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <h3>Withdraw</h3>
+        <div class="small" id="wdInfo">Minimum: 1 USDT</div>
+        <input id="wdAddr" placeholder="Enter wallet address (e.g., TRC20) " style="margin-top:8px"/>
+        <button class="btn primary block" id="wdBtn" style="margin-top:8px">Request Withdraw</button>
       </div>
     </section>
   </main>
@@ -186,9 +182,7 @@ video{width:100%;border-radius:14px;border:1px solid var(--line);background:#000
         <h4 style="margin:0">Playing Advertisement</h4>
         <button class="btn outline" id="closeSheet" aria-label="Close">Close</button>
       </div>
-      <div class="videoBox show">
-        <video id="vastVideo" controls preload="metadata" playsinline webkit-playsinline></video>
-      </div>
+      <video id="vastVideo" controls preload="metadata" playsinline webkit-playsinline></video>
     </div>
   </div>
 
@@ -205,179 +199,145 @@ video{width:100%;border-radius:14px;border:1px solid var(--line);background:#000
 
 <!-- SDKs -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js"></script>
+<script src="https://cdn/fluidplayer.com/v3/current/fluidplayer.min.js"></script>
 <script src="https://libtl.com/sdk.js" data-zone="9711117" data-sdk="show_9711117"></script>
 
 <script>
-/* Helpers */
 const $ = (s)=>document.querySelector(s);
-const api = (p,b)=>fetch(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})}).then(r=>r.json());
+const api=(p,b)=>fetch(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})}).then(r=>r.json());
 
-/* Telegram init */
-const tg = window.Telegram.WebApp;
-try{ tg.expand(); tg.setHeaderColor?.('secondary_bg_color'); tg.setBackgroundColor?.(tg.themeParams?.bg_color || '#ffffff'); }catch{}
-
-/* Cache (UI only) */
+/* Telegram */
+const tg = window.Telegram.WebApp; try{tg.expand()}catch{}
 const UID = String(tg.initDataUnsafe?.user?.id || 'guest');
-const CACHE_KEY = `w2e_cache_${UID}`;
-function saveCache(d){ localStorage.setItem(CACHE_KEY, JSON.stringify({balance:d.balance,earned:d.earned||0,tasks:d.total_tasks||0,streak:d.streak||0})); }
-function loadCache(){
-  try{
-    const c = JSON.parse(localStorage.getItem(CACHE_KEY)||'{}');
-    if(c.balance!=null) $('#kpiBalance').textContent = `${(+c.balance).toFixed(2)} USDT`;
-    if(c.earned !=null)  $('#kpiEarned').textContent  = `${(+c.earned).toFixed(2)} USDT`;
-    if(c.tasks  !=null)  $('#kpiTasks').textContent   = `${(+c.tasks)}`;
-    if(c.streak !=null)  $('#kpiStreak').textContent  = `${(+c.streak)} 🔥`;
-    $('#pBalance').textContent = $('#kpiBalance').textContent;
-  }catch{}
-}
-loadCache();
+$('#uName').textContent = (tg.initDataUnsafe?.user?.first_name || 'User').slice(0,12);
 
 /* Tabs */
-const pages = Array.from(document.querySelectorAll('.page'));
-$('#tabs').addEventListener('click',(e)=>{
-  const btn=e.target.closest('.tab'); if(!btn) return;
-  const go = btn.dataset.go;
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
-  pages.forEach(p=>p.classList.toggle('active', p.id===go));
-});
+const pages=[...document.querySelectorAll('.page')];
+$('#tabs').addEventListener('click',(e)=>{const t=e.target.closest('.tab');if(!t)return;document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));t.classList.add('active');pages.forEach(p=>p.classList.toggle('active',p.id===t.dataset.go));});
 
-/* Sheet controls */
-const sheet=$('#taskSheet'), closeBtn=$('#closeSheet');
-const v=$('#vastVideo'); 
-function openSheet(){ sheet.classList.add('show'); document.body.style.overflow='hidden'; }
-function closeSheetFn(){ sheet.classList.remove('show'); document.body.style.overflow=''; try{v.pause()}catch{} }
-closeBtn.addEventListener('click', closeSheetFn);
-sheet.addEventListener('click',(e)=>{ if(e.target===sheet) closeSheetFn(); });
+/* Sheet */
+const sheet=$('#taskSheet'), v=$('#vastVideo');
+function openSheet(){sheet.classList.add('show');document.body.style.overflow='hidden'}
+function closeSheet(){sheet.classList.remove('show');document.body.style.overflow='';try{v.pause()}catch{}}
+$('#closeSheet').addEventListener('click',closeSheet); sheet.addEventListener('click',(e)=>{if(e.target===sheet) closeSheet()});
 
 /* State */
-let CFG={vastTag:'',reward:0.01,min_withdraw:1, ref_bonus_pct:15, bot_username:''};
+let CFG={vastTag:'',reward:0.01,min_withdraw:1,ref_bonus_pct:15,bot_username:''};
 let FP=null, adDone=false, fbTimer=0, fbNeed=15, lastT=0;
 const fbNow2=$('#fbNow2'), fbNeed2=$('#fbNeed2');
 
-/* Load config + recent + profile/ref */
-async function loadConfig(){
+/* Cache helpers */
+const CKEY=`w2e_cache_${UID}`;
+function cachePut(x){localStorage.setItem(CKEY,JSON.stringify(x))}
+function cacheGet(){try{return JSON.parse(localStorage.getItem(CKEY)||'{}')}catch{return {}}}
+
+/* Load config & data */
+async function loadAll(){
   const d = await api('/api/config',{initData:tg.initData||''});
   if(!d.ok) return;
-  CFG=d; fbNeed = d.min_watch_sec||15; fbNeed2.textContent = String(fbNeed);
-
-  // KPIs
+  CFG=d; fbNeed=d.min_watch_sec||15; fbNeed2.textContent=String(fbNeed);
   $('#kpiBalance').textContent = `${d.balance.toFixed(2)} USDT`;
   $('#kpiEarned').textContent  = `${(d.earned||0).toFixed(2)} USDT`;
   $('#kpiTasks').textContent   = `${d.total_tasks||0}`;
   $('#kpiStreak').textContent  = `${d.streak||0} 🔥`;
   $('#pBalance').textContent   = `${d.balance.toFixed(2)} USDT`;
-  saveCache(d);
+  $('#wdInfo').textContent     = `Minimum: ${d.min_withdraw} USDT`;
 
-  // Profile name
-  const u = tg.initDataUnsafe?.user;
-  $('#uName').textContent = (u?.first_name || 'User').slice(0,12);
-  $('#pName').textContent = u ? (u.first_name + (u.username ? ` (@${u.username})` : '')) : 'Guest';
-  $('#pJoined').textContent = 'Joined ' + new Date().toLocaleDateString();
+  cachePut({balance:d.balance,earned:d.earned||0,total_tasks:d.total_tasks||0,streak:d.streak||0});
+
+  // Daily 1..7 boxes
+  const done = Math.max(0, Math.min(7, d.streak_day || 0));
+  $('#streakDay').textContent = done || 1;
+  [...document.querySelectorAll('.day')].forEach(el=>{
+    el.classList.toggle('done', Number(el.dataset.n) <= done);
+  });
+
+  // Name
+  const u=tg.initDataUnsafe?.user;
+  $('#pName').textContent = u ? `${u.first_name}${u.username?` (@${u.username})`:''}` : 'Guest';
 
   // Referral
-  const pct = d.ref_bonus_pct ?? 15;
-  $('#refPct').textContent = pct;
-  const bot = d.bot_username || 'watch2earnreal_bot'; // fallback
-  const link = `https://t.me/${bot}?start=ref_${UID}`;
-  $('#refLink').value = link;
-  $('#btnShare').href = link;
+  $('#refPct').textContent = d.ref_bonus_pct ?? 15;
+  const bot = d.bot_username || 'watch2earnreal_bot';
+  const rlink = `https://t.me/${bot}?start=ref_${UID}`;
+  $('#refLink').value = rlink;
 
-  // Recent tasks
+  // Recent
   try{
     const r = await api('/api/task/recent',{initData:tg.initData||''});
     if(r.ok && r.items?.length){
       $('#recentWrap').innerHTML = r.items.map(x=>(
-        `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:6px">
-           <div style="min-width:0">
-              <b class="title-accent" style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${x.type||'Ad Task'}</b>
-              <span class="helper">${new Date(x.finished_at||x.created_at).toLocaleString()}</span>
-           </div>
-           <div style="font-weight:800;flex:0 0 auto;color:${x.ok?'#065f46':'#92400e'}">${x.ok?'+':'–'}${(x.amount||CFG.reward).toFixed(2)} USDT</div>
+        `<div style="display:flex;justify-content:space-between;gap:8px;border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:6px">
+           <div><b>${x.type||'Ad Task'}</b><div class="small">${new Date(x.finished_at||x.created_at).toLocaleString()}</div></div>
+           <div style="font-weight:800;color:${x.ok?'#065f46':'#92400e'}">${x.ok?'+':'–'}${(x.amount||CFG.reward).toFixed(2)} USDT</div>
          </div>`
       )).join('');
-    } else { $('#recentWrap').textContent='No tasks yet.'; }
+    } else $('#recentWrap').textContent='No tasks yet.';
   }catch{ $('#recentWrap').textContent='No tasks yet.'; }
-}
-loadConfig();
 
-/* Copy ref */
-$('#btnCopy').addEventListener('click', async ()=>{
+  // Referral list
   try{
-    await navigator.clipboard.writeText($('#refLink').value);
-    alert('Referral link copied');
-  }catch{ alert('Copy failed'); }
+    const rr = await api('/api/referrals',{initData:tg.initData||''});
+    if(rr.ok && rr.items?.length){
+      $('#refList').innerHTML = rr.items.map(u=>(
+        `<div style="display:flex;justify-content:space-between;gap:8px;border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:6px">
+           <div><b>${u.username?`@${u.username}`:'user'}</b><div class="small">${new Date(u.joined_at||Date.now()).toLocaleDateString()}</div></div>
+           <div class="small">Earned: ${(u.earnings||0).toFixed(2)} USDT</div>
+         </div>`
+      )).join('');
+    } else $('#refList').textContent='No referrals yet.';
+  }catch{ /* ignore */ }
+}
+const c=cacheGet(); if(c.balance!=null){$('#kpiBalance').textContent=`${(+c.balance).toFixed(2)} USDT`; $('#pBalance').textContent=`${(+c.balance).toFixed(2)} USDT`;}
+loadAll();
+
+/* Copy referral link */
+$('#btnCopy').addEventListener('click', async ()=>{
+  try{await navigator.clipboard.writeText($('#refLink').value); alert('Copied');}catch{alert('Copy failed');}
 });
 
-/* Refresh Profile */
-$('#btnRefresh').addEventListener('click', loadConfig);
-
-/* Daily Check-in */
-function setCheckinNote(txt){ $('#checkinNote').textContent = txt; }
+/* Check-in */
 $('#btnCheckin').addEventListener('click', async ()=>{
-  // backend endpoint (ubah sesuai server kamu)
   const r = await api('/api/checkin',{initData:tg.initData||''});
-  if(r.ok){ alert(`+${(r.amount||0).toFixed(2)} USDT`); loadConfig(); }
+  if(r.ok){ alert(`+${(r.amount||0).toFixed(2)} USDT`); loadAll(); }
   else{
-    // fallback: lock 1x/hari via localStorage
-    const k=`w2e_chk_${new Date().toDateString()}_${UID}`;
-    if(localStorage.getItem(k)) { setCheckinNote('Already claimed today.'); return; }
-    localStorage.setItem(k,'1');
-    alert('Claimed (local). Hook server to make it real.');
+    // fallback lock once per day
+    const k=`chk_${new Date().toDateString()}_${UID}`; if(localStorage.getItem(k)){ $('#checkinNote').textContent='Already claimed today.'; return; }
+    localStorage.setItem(k,'1'); $('#checkinNote').textContent='Claimed (local)'; 
   }
 });
 
-/* Stream Task (VAST) */
+/* Withdraw */
+$('#wdBtn').addEventListener('click', async ()=>{
+  const address = $('#wdAddr').value.trim(); if(!address){alert('Enter address first'); return;}
+  const r = await api('/api/withdraw',{initData:tg.initData||'', address});
+  if(r.ok) alert(`Withdraw request created: ${r.amount||''} USDT`);
+  else alert(r.error||'Failed');
+});
+
+/* Ads — Stream/VAST */
 async function startVideoTask(){
   if(!CFG.vastTag){ alert('Ad source not configured'); return; }
-  const s = await api('/api/task/start',{initData:tg.initData||''});
-  if(!s.ok){ alert(s.error||'Failed to start'); return; }
-  const taskId = s.task_id;
-  adDone=false; lastT=0; fbTimer=0; fbNow2.textContent='0';
-  // open sheet
+  const s = await api('/api/task/start',{initData:tg.initData||''}); if(!s.ok){ alert(s.error||'Failed to start'); return; }
+  const taskId=s.task_id; adDone=false; fbTimer=0; lastT=0; $('#fbNow2').textContent='0';
   openSheet();
-  // prepare fluid
   v.innerHTML='<source src="data:video/mp4;base64," type="video/mp4">';
   if(window.FP && FP.destroy) try{FP.destroy()}catch{}
-  FP = fluidPlayer('vastVideo',{
-    layoutControls:{fillToContainer:true,allowDownload:false,playbackRateEnabled:false},
-    vastOptions:{ adList:[{roll:'preRoll',vastTag:CFG.vastTag,skippable:true}], vpaidMode:'INSECURE', maxAllowedVastTagRedirects:5 }
-  });
-  FP.on('adEnded', async ()=>{
-    if(adDone) return; adDone=true;
-    const r = await api('/api/task/complete',{initData:tg.initData||'',task_id:taskId});
-    if(r.ok){ alert(`+${CFG.reward} USDT credited.`); closeSheetFn(); loadConfig(); }
-  });
-  // fallback
-  v.addEventListener('timeupdate', ()=>{
-    const dt=Math.max(0, v.currentTime-lastT); lastT=v.currentTime;
-    if(document.visibilityState==='visible' && !v.paused) fbTimer += dt;
-    fbNow2.textContent = String(Math.floor(fbTimer));
-    if(!adDone && fbTimer>=fbNeed){
-      adDone=true;
-      api('/api/task/complete',{initData:tg.initData||'',task_id:taskId}).then(r=>{
-        if(r.ok){ alert(`+${CFG.reward} USDT (fallback).`); closeSheetFn(); loadConfig(); }
-      });
-    }
-  }, {passive:true});
-  try{ await v.play(); }catch{}
+  FP = fluidPlayer('vastVideo',{layoutControls:{fillToContainer:true,allowDownload:false,playbackRateEnabled:false},
+    vastOptions:{adList:[{roll:'preRoll',vastTag:CFG.vastTag,skippable:true}],vpaidMode:'INSECURE',maxAllowedVastTagRedirects:5}});
+  FP.on('adEnded', async ()=>{ if(adDone) return; adDone=true; const r=await api('/api/task/complete',{initData:tg.initData||'',task_id:taskId}); if(r.ok){ alert(`+${CFG.reward} USDT`); closeSheet(); loadAll(); } });
+  v.addEventListener('timeupdate',()=>{const dt=Math.max(0,v.currentTime-lastT); lastT=v.currentTime; if(document.visibilityState==='visible' && !v.paused) fbTimer+=dt; fbNow2.textContent=String(Math.floor(fbTimer)); if(!adDone && fbTimer>=fbNeed){adDone=true; api('/api/task/complete',{initData:tg.initData||'',task_id:taskId}).then(r=>{if(r.ok){alert(`+${CFG.reward} USDT (fallback)`); closeSheet(); loadAll();}})}},{passive:true});
+  try{await v.play()}catch{}
 }
 $('#taskVastBtn').addEventListener('click', startVideoTask);
 
-/* Rewarded formats */
+/* Monetag popup/interstitial */
 const runReward = async (fn)=>{
-  const s = await api('/api/task/start',{initData:tg.initData||''});
-  if(!s.ok){ alert(s.error||'Failed to start'); return; }
-  const taskId = s.task_id;
-  try{
-    await fn();
-    const r = await api('/api/task/complete',{initData:tg.initData||'',task_id:taskId});
-    if(r.ok){ alert(`+${CFG.reward} USDT`); loadConfig(); }
-  }catch{}
+  const s = await api('/api/task/start',{initData:tg.initData||''}); if(!s.ok){alert(s.error||'Failed to start'); return;}
+  const taskId=s.task_id; try{await fn(); const r=await api('/api/task/complete',{initData:tg.initData||'',task_id:taskId}); if(r.ok){alert(`+${CFG.reward} USDT`); loadAll();}}catch{}
 };
-$('#taskPopBtn').addEventListener('click', ()=>runReward(()=>show_9711117('pop')));
-$('#taskIntBtn').addEventListener('click', ()=>runReward(()=>show_9711117()));
+$('#taskPopBtn').addEventListener('click',()=>runReward(()=>show_9711117('pop')));
+$('#taskIntBtn').addEventListener('click',()=>runReward(()=>show_9711117()));
 </script>
 </body>
 </html>
