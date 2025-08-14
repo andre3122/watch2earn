@@ -6,7 +6,7 @@
 <title>Watch2Earn</title>
 <link rel="preconnect" href="https://cdn.fluidplayer.com" crossorigin>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script defer src="https://cdn/fluidplayer.com/v3/current/fluidplayer.min.js"></script>
+<script defer src="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js"></script>
 <!-- Monetag Mini App SDK (ubah data-zone ke milikmu) -->
 <script src="//libtl.com/sdk.js" data-zone="9711117" data-sdk="show_9711117"></script>
 <style>
@@ -234,8 +234,11 @@
   const VAST_TAG = ''; // isi jika punya VAST URL (opsional)
   const FALLBACK_SEC = 15;
 
+  // === USER ID & localStorage per user ===
+  const UID = tg?.initDataUnsafe?.user?.id || 'guest';
+  const LSKEY = `w2e_state_v2_${UID}`; // <-- storage unik per user
+
   // === STATE (localStorage) ===
-  const LSKEY = 'w2e_state_v2';
   const state = loadState();
   function loadState(){
     const d = JSON.parse(localStorage.getItem(LSKEY) || '{}');
@@ -260,7 +263,7 @@
   document.getElementById('joinedTxt').textContent = `Joined ${state.join}`;
 
   // referral link
-  const uid = tg?.initDataUnsafe?.user?.id || Math.floor(100000+Math.random()*900000);
+  const uid = UID || Math.floor(100000+Math.random()*900000);
   const refUrl = `https://t.me/${BOT_USERNAME}?start=${uid}`;
   document.getElementById('refLink').value = refUrl;
   document.getElementById('refLink2').value = refUrl;
@@ -349,7 +352,7 @@
     playerWrap.classList.remove('hidden');
     v.innerHTML = '<source src="data:video/mp4;base64," type="video/mp4">';
 
-    // Safety: if ad events gagal, tetap kredit setelah 45s
+    // Safety: watchdog
     clearTimeout(watchdog);
     watchdog = setTimeout(()=>creditTask('watchdog'), 45000);
 
@@ -359,11 +362,9 @@
         layoutControls:{fillToContainer:true, allowDownload:false, playbackRateEnabled:false},
         vastOptions:{ adList:[{roll:'preRoll', vastTag: VAST_TAG, skippable:true}], vpaidMode:'INSECURE', maxAllowedVastTagRedirects:5 }
       });
-      // Kredit jika iklan benar2 berakhir
       fp.on('adEnded', ()=> creditTask('vast-end'));
-      // Kalau ada error/skip, kita tetap pakai fallback waktu tonton
-      fp.on('adError', ()=> {/* keep fallback ticking */});
-      fp.on('adSkipped', ()=> {/* keep fallback ticking */});
+      fp.on('adError', ()=> {});
+      fp.on('adSkipped', ()=> {});
     }
 
     // Fallback timer — kredit setelah FALLBACK_SEC detik waktu play foreground
@@ -375,36 +376,47 @@
       }
     },1000);
 
-    try{ await v.play(); }catch(e){ /* user perlu tap play manual */ }
+    try{ await v.play(); }catch(e){}
   });
 
-  // ===== Ads: Monetag SDK buttons — tambah guard jika Promise tidak resolve =====
+  // ===== Helper reqid untuk Monetag SDK =====
+  function genReqId(){
+    return `${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+  }
+
+  // ===== Ads: Monetag SDK buttons — kirim sub1=sub(telegram_id), sub2=reqid =====
   const g = (name)=>window[name];
 
   async function runMonetagAndCredit(runFn, label){
     rewarded=false;
-    // Guard timeout (misal ad selesai tapi Promise tidak resolve)
     let guard = setTimeout(()=>creditTask(`${label}-guard`), 45000);
     try{
       await runFn();
       creditTask(label);
     }catch(e){
-      // biarkan guard yang menangani jika perlu
+      // biar guard yang handle jika promisenya gak resolve
     }finally{
       clearTimeout(guard);
     }
   }
 
   document.getElementById('btnRewPopup').onclick = ()=> {
-    const fn = ()=> g('show_9711117')('pop');
+    const reqid = genReqId();
+    const fn = ()=> g('show_9711117')({ type:'pop', sub1: UID, sub2: reqid });
     return runMonetagAndCredit(fn, 'popup');
   };
   document.getElementById('btnRewInter').onclick = ()=> {
-    const fn = ()=> g('show_9711117')();
+    const reqid = genReqId();
+    const fn = ()=> g('show_9711117')({ sub1: UID, sub2: reqid });
     return runMonetagAndCredit(fn, 'interstitial');
   };
   document.getElementById('btnInApp').onclick   = ()=> {
-    const fn = ()=> g('show_9711117')({type:'inApp',inAppSettings:{frequency:1,capping:0.1,interval:20,timeout:5,everyPage:false}});
+    const reqid = genReqId();
+    const fn = ()=> g('show_9711117')({
+      sub1: UID, sub2: reqid,
+      type:'inApp',
+      inAppSettings:{frequency:1,capping:0.1,interval:20,timeout:5,everyPage:false}
+    });
     return runMonetagAndCredit(fn, 'inapp');
   };
 
@@ -462,3 +474,5 @@
   syncUI();
 })();
 </script>
+</body>
+</html>
