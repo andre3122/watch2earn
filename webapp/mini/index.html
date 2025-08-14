@@ -1,387 +1,420 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-  <title>Watch2Earn</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- FluidPlayer tetap ada kalau kamu pakai VAST -->
-  <link rel="preconnect" href="https://cdn.fluidplayer.com" crossorigin>
-  <script defer src="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js"></script>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Watch2Earn</title>
+<link rel="preconnect" href="https://cdn.fluidplayer.com" crossorigin>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script defer src="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js"></script>
+<!-- Monetag Mini App SDK (ubah data-zone ke milikmu) -->
+<script src="//libtl.com/sdk.js" data-zone="9711117" data-sdk="show_9711117"></script>
+<style>
+  :root{
+    --bg:#f6f8fb;--card:#ffffff;--ink:#0b1220;--muted:#5b6b82;--line:#e7edf4;
+    --brand1:#67d6ff;--brand2:#38e1b7;--brand:#4fd3ca;
+    --pill-bg:#eef3f8;--pill-ink:#22324d;--accent:#316aff;
+    --success:#22c55e;--warning:#f59e0b;--danger:#ef4444;
+    --radius:16px;--pad:16px;--shadow:0 10px 30px rgba(16,24,40,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.4 Inter,system-ui,Segoe UI,Roboto,Arial}
+  .wrap{max-width:920px;margin:0 auto;padding:var(--pad);padding-bottom:96px}
 
-  <style>
-    :root{
-      --bg:#0e1116;
-      --card:#121824;
-      --muted:#9fb3c8;
-      --fg:#e9f1f8;
-      --pill:#1a2333;
-      --accent1:#69d0ff;
-      --accent2:#59e3b0;
-      --shadow:0 12px 28px rgba(0,0,0,.35);
-      --radius:18px;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;
-      color:var(--fg);background:#0b1016;
-      display:flex;flex-direction:column;min-height:100vh;
-    }
-    .wrap{max-width:900px;margin:0 auto;padding:16px 16px 96px}
-    .row{display:flex;align-items:center;gap:12px}
-    .space{justify-content:space-between}
-    .chip{padding:8px 12px;border-radius:999px;background:#101826;border:1px solid #1d2a3a;color:#d7e7f6;font-weight:600}
-    .brand{display:flex;align-items:center;gap:12px}
-    .brand .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#74e4ff,#8af3c9);}
-    h1{font-size:20px;margin:0}
-    .card{background:var(--card);border:1px solid #1b2838;border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-top:12px}
-    .muted{color:var(--muted)}
-    .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px}
-    .tile{background:#0f1723;border:1px solid #1b2838;border-radius:14px;padding:12px}
-    .tile .t{font-size:13px;color:var(--muted)}
-    .tile .v{margin-top:6px;font-weight:800;font-size:20px}
-    /* Check-in gradient section */
-    .checkin{
-      margin-top:14px;
-      background:linear-gradient(135deg,#6f7bf8 0%,#9f55ff 38%, #ff6ec7 70%, #ffb86c 100%);
-      border:none;position:relative;overflow:hidden;
-    }
-    .checkin .inner{background:rgba(10,14,22,.25);backdrop-filter:blur(2px);border-radius:14px;padding:14px}
-    .check-days{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
-    .day{
-      background:rgba(255,255,255,.12);
-      border:2px solid rgba(255,255,255,.18);
-      color:#fff;border-radius:12px;padding:12px;text-align:center;font-weight:700;
-    }
-    .day.lock{opacity:.55}
-    .day.done{background:rgba(87,255,176,.28);border-color:rgba(87,255,176,.8)}
-    .day.active{outline:3px solid rgba(255,235,59,.85)}
-    .progress{height:8px;border-radius:999px;background:rgba(255,255,255,.18);margin:14px 4px 0;overflow:hidden}
-    .bar{height:100%;width:0;background:linear-gradient(90deg,#69d0ff,#59e3b0)}
-    .cta{
-      margin-top:16px;width:100%;
-      border:0;border-radius:14px;
-      padding:16px 18px;
-      background:linear-gradient(90deg,#69d0ff,#59e3b0);
-      color:#04131c;font-weight:900;font-size:18px;cursor:pointer;
-      box-shadow:0 10px 28px rgba(72,190,210,.35);
-    }
-    /* Ads page */
-    .task{background:#0f1723;border:1px solid #1b2838;border-radius:14px;padding:14px}
-    .bigbtn{
-      margin-top:12px;width:100%;
-      border:0;border-radius:14px;padding:14px 16px;font-weight:900;
-      background:linear-gradient(90deg,#69d0ff,#59e3b0);color:#062732;cursor:pointer
-    }
-    .h2{font-size:18px;font-weight:900;margin:0 0 6px}
-    .p{color:var(--muted);margin:0}
-    video{width:100%;border-radius:12px;border:1px solid #1b2838}
+  /* Header */
+  .appbar{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .logo{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#7ee8fa,#eec0c6)}
+  .title{font-weight:800;font-size:20px}
+  .chip{margin-left:auto;background:#0b1220;color:#fff;border-radius:999px;padding:6px 12px;font-weight:700}
+  .chip small{opacity:.7;margin-left:6px}
 
-    /* Bottom nav – pill style */
-    .tabs{
-      position:fixed;left:0;right:0;bottom:0;
-      padding:10px 10px calc(env(safe-area-inset-bottom) + 10px);
-      display:flex;gap:10px;justify-content:space-between;background:linear-gradient(180deg,transparent,rgba(5,8,12,.8) 40%, rgba(5,8,12,.95));
-      backdrop-filter:blur(6px);
-    }
-    .tab{
-      flex:1;display:flex;align-items:center;justify-content:center;
-      background:var(--pill);border:1px solid #202c3d;color:#d7e7f6;
-      border-radius:16px;padding:14px 10px;font-weight:700;cursor:pointer;
-      transition:transform .05s ease, background .2s ease;
-    }
-    .tab.active{background:linear-gradient(90deg,#69d0ff33,#59e3b033);border-color:#2a3a4f;box-shadow:inset 0 0 0 2px #244055}
-    .hidden{display:none}
-    .right{display:flex;align-items:center;gap:8px}
-    .username{font-weight:800}
-    @media(min-width:700px){ .check-days{grid-template-columns:repeat(7,1fr);} }
-  </style>
+  /* Cards */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:var(--pad);box-shadow:var(--shadow);margin-bottom:12px}
+  .card h3{margin:0 0 8px;font-size:18px}
+  .muted{color:var(--muted)}
+
+  /* Buttons */
+  .btn{appearance:none;border:0;border-radius:12px;padding:14px 16px;font-weight:800;color:#0b1220;background:#e8f0fb;cursor:pointer}
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:linear-gradient(135deg,var(--brand1),var(--brand2));color:#08210f}
+  .btn.ghost{background:var(--pill-bg);color:var(--pill-ink)}
+  .btn.block{width:100%}
+
+  /* Grid helpers */
+  .grid{display:grid;gap:12px}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  @media (min-width:600px){ .g3-lg{grid-template-columns:repeat(3,1fr)} }
+
+  /* Check-in card (colorful) */
+  .checkin{background:linear-gradient(135deg,#8fd3f4,#c793ff 40%,#f8ae55);color:#0b1220}
+  .daygrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:10px 0 12px}
+  .day{background:rgba(255,255,255,.22);backdrop-filter:blur(2px);border:2px solid rgba(255,255,255,.5);
+        color:#0b1220;border-radius:14px;padding:10px;text-align:center;font-weight:800}
+  .day.lock{opacity:.6}
+  .day.done{border-color:#34d399}
+  .progress{height:8px;background:rgba(255,255,255,.35);border-radius:999px;overflow:hidden}
+  .bar{height:100%;width:0;background:#34d399}
+
+  /* Video player area */
+  video{width:100%;border-radius:12px;border:1px solid var(--line);background:#000}
+
+  /* Bottom nav */
+  .tabs{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.7);backdrop-filter:blur(8px);
+        border-top:1px solid var(--line);padding:10px}
+  .tabbar{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:920px;margin:0 auto}
+  .tab{border-radius:16px;background:var(--pill-bg);color:var(--pill-ink);text-align:center;padding:12px 10px;font-weight:800}
+  .tab.active{outline:2px solid #d2e6ff;background:#f5f9ff}
+  .tab small{display:block;color:var(--muted);font-weight:600}
+
+  /* Small helpers */
+  .row{display:flex;align-items:center;gap:10px}
+  .between{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .chipBal{background:#0b1220;color:#fff;border-radius:20px;padding:6px 10px;font-weight:800}
+  .field{width:100%;background:#f5f7fb;border:1px solid var(--line);border-radius:12px;padding:14px;color:var(--ink)}
+  .hint{font-size:13px;color:var(--muted);margin-top:6px}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+  .hidden{display:none}
+</style>
 </head>
-
 <body>
   <div class="wrap">
-    <!-- HEADER -->
-    <div class="row space">
-      <div class="brand">
-        <div class="logo"></div>
-        <div>
-          <h1>Watch2Earn</h1>
-          <div class="muted" id="joinedTxt">Loading…</div>
-        </div>
+    <!-- Header -->
+    <div class="appbar">
+      <div class="logo"></div>
+      <div>
+        <div class="title">Watch2Earn</div>
+        <div class="muted" id="joinedTxt">Joined —</div>
       </div>
-      <div class="right">
-        <span class="chip">Balance: <b id="balance">0.00</b> USDT</span>
-        <span class="chip"><span id="uname" class="username">User</span></span>
-      </div>
+      <div class="chip" id="userChip">User</div>
     </div>
 
     <!-- HOME -->
-    <section id="page-home" class="page">
-      <div class="card checkin">
-        <div class="inner">
-          <div class="row space">
-            <div style="font-weight:900;font-size:20px">Daily Check-in Bonus</div>
+    <section id="screen-home">
+      <div class="grid g2">
+        <div class="card">
+          <div class="between">
+            <h3>Balance</h3><div class="chipBal"><span id="balTop">0.00</span> USDT</div>
           </div>
-          <div class="muted" style="margin-top:4px">Claim your daily reward and keep your streak!</div>
-
-          <div id="days" class="check-days"></div>
-
-          <div class="progress"><div id="bar" class="bar"></div></div>
-          <button id="btnClaim" class="cta">Claim Today</button>
+          <div class="grid g2">
+            <div>
+              <div class="muted">Total Earned</div>
+              <div class="title" id="totalEarn">0.00 USDT</div>
+            </div>
+            <div>
+              <div class="muted">Tasks Completed</div>
+              <div class="title" id="tasksDone">0</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="between">
+            <h3>Daily Streak</h3><div class="chipBal" id="streakChip">0 🔥</div>
+          </div>
+          <div class="muted">Keep checking in daily to boost your streak.</div>
         </div>
       </div>
 
+      <div class="card checkin">
+        <h3>Daily Check-in Bonus</h3>
+        <div class="muted">Claim your daily reward and keep your streak!</div>
+        <div class="daygrid" id="dayGrid"></div>
+        <div class="progress"><div class="bar" id="bar"></div></div>
+        <div style="height:10px"></div>
+        <button class="btn primary block" id="btnClaim">Claim <span id="claimAmt">+0.00</span> USDT</button>
+      </div>
+
       <div class="card">
-        <div class="h2">Invite Friends & Earn</div>
-        <div class="p">Share your referral link to grow faster.</div>
-        <div class="row" style="margin-top:10px">
-          <input id="reflink" class="tab" style="flex:1;text-align:left;font-weight:600" readonly>
-          <button id="copyRef" class="tab" style="flex:0 0 120px">Copy</button>
+        <h3>Invite Friends & Earn</h3>
+        <div class="muted" id="refPct">Earn 17% of your friends’ earnings.</div>
+        <div class="row" style="margin-top:8px">
+          <input id="refLink" class="field mono" readonly value=""/>
+          <button class="btn ghost" id="copyRef">Copy</button>
         </div>
       </div>
     </section>
 
     <!-- ADS -->
-    <section id="page-ads" class="page hidden">
+    <section id="screen-ads" class="hidden">
       <div class="card">
-        <div class="h2">Ads Task</div>
-        <div class="p">Start a task and watch till completion to earn rewards.</div>
-        <div class="task" style="margin-top:12px">
-          <div class="h2" style="color:#a8d8ff">Stream Task (Video)</div>
-          <div class="p">Watch a pre-roll ad, then continue the video.</div>
-          <button id="startTask" class="bigbtn">Start Task</button>
-
-          <div id="playerWrap" class="hidden" style="margin-top:12px">
+        <h3>Ads Task</h3>
+        <div class="muted">Start a task and watch till completion to earn rewards.</div>
+        <div class="card" style="margin-top:12px">
+          <div class="between"><div class="title">Stream Task (Video)</div>
+            <div class="muted">Fallback: <span id="fallbackNeed">15</span>s</div></div>
+          <button class="btn primary block" id="btnStartStream">Start Task</button>
+          <div id="playerWrap" class="hidden" style="margin-top:10px">
             <video id="player" controls preload="metadata"></video>
-            <div class="p" style="margin-top:6px">Fallback watch time:
-              <b id="wat">0</b>s / <b id="need">15</b>s
-            </div>
           </div>
         </div>
+      </div>
 
-        <div class="task" style="margin-top:12px">
-          <div class="h2">Completed Tasks</div>
-          <div class="row" style="gap:10px">
-            <button id="btnPopup" class="bigbtn" style="flex:1">Rewarded Popup</button>
-            <button id="btnInter" class="bigbtn" style="flex:1">Interstitial</button>
-          </div>
+      <div class="card">
+        <h3>Completed Tasks</h3>
+        <div class="grid g3 g3-lg" style="margin-top:8px">
+          <button class="btn primary" id="btnRewPopup">Rewarded Popup</button>
+          <button class="btn primary" id="btnRewInter">Rewarded Interstitial</button>
+          <button class="btn primary" id="btnInApp">In-app Interstitial</button>
         </div>
       </div>
     </section>
 
     <!-- REFER -->
-    <section id="page-refer" class="page hidden">
+    <section id="screen-refer" class="hidden">
       <div class="card">
-        <div class="h2">Refer & Earn</div>
-        <div class="p">Earn <b id="refPct">17%</b> of your friends’ earnings for life.</div>
-        <div class="row" style="margin-top:10px">
-          <input id="refLink2" class="tab" style="flex:1;text-align:left;font-weight:600" readonly>
-          <button id="copyRef2" class="tab" style="flex:0 0 120px">Copy</button>
+        <h3>Refer & Earn</h3>
+        <div class="muted">Share your referral link to grow faster.</div>
+        <div class="row" style="margin-top:8px">
+          <input id="refLink2" class="field mono" readonly value=""/>
+          <button class="btn ghost" id="copyRef2">Copy</button>
         </div>
-      </div>
-      <div class="card">
-        <div class="h2">Referrals List</div>
-        <div id="refs" class="p">No referrals yet.</div>
+        <div class="card" style="margin-top:12px">
+          <div class="between"><div class="muted">Referrals</div><div class="chipBal" id="refCount">0</div></div>
+          <div id="refList" class="muted" style="margin-top:8px">Your referrals will appear here.</div>
+        </div>
       </div>
     </section>
 
     <!-- PROFILE -->
-    <section id="page-profile" class="page hidden">
-      <div class="card row space">
-        <div>
-          <div class="h2">Profile</div>
-          <div class="p"><b id="uname2">User</b> • Joined <span id="joinedTxt2">—</span></div>
+    <section id="screen-profile" class="hidden">
+      <div class="card">
+        <div class="between">
+          <h3>Profile</h3>
+          <div class="chipBal"><span id="balProf">0.00</span> USDT</div>
         </div>
-        <div class="chip">Balance: <b id="balance2">0.00</b> USDT</div>
+        <div class="muted"><span id="profName">User</span> • Joined <span id="joinedDate">—</span></div>
       </div>
 
       <div class="card">
-        <div class="h2">Withdraw</div>
-        <div class="p">Minimum: <b id="minWdTxt">1</b> USDT</div>
-
-        <div style="margin-top:10px">
-          <div class="p" style="margin-bottom:6px">Amount</div>
-          <input id="wdAmt" class="tab" placeholder="Enter amount (USDT)">
-          <div class="muted" style="margin-top:6px">Minimum withdraw is <span id="minWdTxt2">1</span> USDT.</div>
-        </div>
-
-        <div style="margin-top:12px">
-          <div class="p" style="margin-bottom:6px">Wallet Address</div>
-          <input id="wdAddr" class="tab" placeholder="Wallet address (e.g., TON / TRC20)">
-          <div class="muted" style="margin-top:6px">
-            Enter the address for your selected network (e.g., TON address or TRC20 USDT).
-          </div>
-        </div>
-
-        <button id="reqWd" class="cta" style="margin-top:14px">Request Withdraw</button>
+        <h3>Withdraw</h3>
+        <div class="muted">Minimum: <b id="minWdTxt">1</b> USDT</div>
+        <div style="height:10px"></div>
+        <div>Amount</div>
+        <input id="wdAmt" class="field" placeholder="Enter amount (USDT)" inputmode="decimal">
+        <div class="hint">Minimum withdraw is <span id="minWdHint">1</span> USDT.</div>
+        <div style="height:10px"></div>
+        <div>Wallet Address</div>
+        <input id="wdAddr" class="field" placeholder="Wallet address (e.g., TON / TRC20)">
+        <div class="hint">Enter the address for your selected network (e.g., TON address or TRC20 USDT).</div>
+        <div style="height:12px"></div>
+        <button class="btn primary block" id="btnWithdraw">Request Withdraw</button>
       </div>
     </section>
   </div>
 
-  <!-- BOTTOM TABS -->
-  <nav class="tabs">
-    <button class="tab active" data-go="home">Home</button>
-    <button class="tab" data-go="ads">Ads</button>
-    <button class="tab" data-go="refer">Refer</button>
-    <button class="tab" data-go="profile">Profile</button>
-  </nav>
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tabbar">
+      <button class="tab active" data-tab="home">Home</button>
+      <button class="tab" data-tab="ads">Ads</button>
+      <button class="tab" data-tab="refer">Refer</button>
+      <button class="tab" data-tab="profile">Profile</button>
+    </div>
+  </div>
 
-  <script>
-    // ===== Helpers =====
-    const tg = window.Telegram?.WebApp; if (tg) tg.expand();
-    const initData = tg?.initData || "";
-    const U = (id)=>document.getElementById(id);
-    const pages = {
-      home:  document.getElementById('page-home'),
-      ads:   document.getElementById('page-ads'),
-      refer: document.getElementById('page-refer'),
-      profile: document.getElementById('page-profile'),
-    };
-    document.querySelectorAll('.tabs .tab').forEach(btn=>{
-      btn.onclick=()=>{
-        document.querySelectorAll('.tabs .tab').forEach(b=>b.classList.remove('active'));
-        btn.classList.add('active');
-        const go = btn.dataset.go;
-        Object.keys(pages).forEach(k=>pages[k].classList.add('hidden'));
-        pages[go].classList.remove('hidden');
-      };
+<script>
+(function(){
+  const tg = window.Telegram?.WebApp;
+  tg && tg.expand();
+
+  // === CONFIG (ubah sesuai kebutuhan) ===
+  const BOT_USERNAME = 'watch2earnreal_bot'; // ganti dengan bot kamu
+  const REWARD_PER_TASK = 0.01;
+  const REF_BONUS_PCT = 17; // untuk teks saja
+  const MIN_WITHDRAW = 1;
+  const VAST_TAG = ''; // isi kalau sudah punya VAST URL untuk pre-roll (opsional)
+  const FALLBACK_SEC = 15;
+
+  // === STATE (persist di localStorage) ===
+  const LSKEY = 'w2e_state_v2';
+  const state = loadState();
+  function loadState(){
+    const d = JSON.parse(localStorage.getItem(LSKEY) || '{}');
+    return Object.assign({
+      balance: 0, totalEarned:0, tasksDone:0,
+      streak:0, lastCheck:'' , join: '',
+      refs:[], wallet:''
+    }, d);
+  }
+  function save(){ localStorage.setItem(LSKEY, JSON.stringify(state)); syncUI(); }
+
+  // init join date
+  if(!state.join){
+    const now = new Date();
+    state.join = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+    save();
+  }
+
+  // header / identity
+  const uname = tg?.initDataUnsafe?.user?.username || tg?.initDataUnsafe?.user?.first_name || 'User';
+  document.getElementById('userChip').textContent = uname;
+  document.getElementById('joinedTxt').textContent = `Joined ${state.join}`;
+
+  // referral link
+  const uid = tg?.initDataUnsafe?.user?.id || Math.floor(100000+Math.random()*900000);
+  const refUrl = `https://t.me/${BOT_USERNAME}?start=${uid}`;
+  document.getElementById('refLink').value = refUrl;
+  document.getElementById('refLink2').value = refUrl;
+  document.getElementById('refPct').textContent = `Earn ${REF_BONUS_PCT}% of your friends’ earnings.`;
+
+  // Profile info
+  document.getElementById('profName').textContent = uname;
+  document.getElementById('joinedDate').textContent = state.join;
+  document.getElementById('minWdTxt').textContent = MIN_WITHDRAW;
+  document.getElementById('minWdHint').textContent = MIN_WITHDRAW;
+
+  // Check-in amounts (7 days)
+  const dayRewards = [0.02,0.04,0.06,0.08,0.10,0.12,0.15];
+  const dayGrid = document.getElementById('dayGrid');
+  function buildDays(){
+    dayGrid.innerHTML = '';
+    for(let i=0;i<7;i++){
+      const d = document.createElement('div');
+      d.className = 'day lock';
+      d.innerHTML = `Day ${i+1}<div style="font-weight:900">${dayRewards[i]}</div>`;
+      dayGrid.appendChild(d);
+    }
+  }
+  buildDays();
+
+  // Claim button logic
+  const btnClaim = document.getElementById('btnClaim');
+  const bar = document.getElementById('bar');
+  const claimAmt = document.getElementById('claimAmt');
+  function todayStr(){
+    const n=new Date();return `${n.getFullYear()}-${n.getMonth()+1}-${n.getDate()}`;
+  }
+  function updateCheckinUI(){
+    const last = state.lastCheck;
+    const t = todayStr();
+    const canClaim = (last!==t);
+    const idx = Math.min(state.streak, 7)-1;
+    const progress = Math.min(state.streak/7,1)*100;
+    bar.style.width = progress + '%';
+    claimAmt.textContent = '+' + dayRewards[(state.streak)%7].toFixed(2);
+    // paint done/next
+    [...dayGrid.children].forEach((el,i)=>{
+      el.classList.remove('done'); el.classList.add('lock');
+      if(i < state.streak) el.classList.add('done');
+      if(i <= state.streak) el.classList.remove('lock');
     });
+    btnClaim.disabled = !canClaim;
+    btnClaim.textContent = canClaim ? `Claim ${dayRewards[(state.streak)%7].toFixed(2)} USDT` : 'Already claimed today';
+  }
+  btnClaim.addEventListener('click',()=>{
+    const t = todayStr();
+    if(state.lastCheck===t) return;
+    const amt = dayRewards[(state.streak)%7];
+    state.balance += amt;
+    state.totalEarned += amt;
+    state.streak = Math.min(state.streak+1, 7); // simple 7-day loop
+    state.lastCheck = t;
+    save();
+    toast(`+${amt.toFixed(2)} USDT added`);
+  });
 
-    // ===== Joined date (persist once) =====
-    const LS = window.localStorage;
-    if (!LS.getItem('joined_at')) LS.setItem('joined_at', new Date().toISOString());
-    function fmtDate(iso){
-      try{ const d=new Date(iso); return d.toLocaleDateString(); }catch{ return '—'; }
+  // === Ads: Stream (pre-roll) ===
+  const playerWrap = document.getElementById('playerWrap');
+  const v = document.getElementById('player');
+  const btnStartStream = document.getElementById('btnStartStream');
+  document.getElementById('fallbackNeed').textContent = FALLBACK_SEC;
+  let fp=null, fallbackTimer=null, watched=0, lastT=0, rewarded=false;
+
+  function creditTask(){
+    if(rewarded) return;
+    rewarded = true;
+    state.balance += REWARD_PER_TASK;
+    state.totalEarned += REWARD_PER_TASK;
+    state.tasksDone += 1;
+    save();
+    toast(`Task complete: +${REWARD_PER_TASK.toFixed(2)} USDT`);
+  }
+
+  btnStartStream.addEventListener('click', async ()=>{
+    rewarded=false; watched=0; lastT=0;
+    playerWrap.classList.remove('hidden');
+    v.innerHTML = '<source src="data:video/mp4;base64," type="video/mp4">';
+    try{ fp && fp.destroy && fp.destroy(); }catch(e){}
+    if(VAST_TAG){
+      fp = fluidPlayer('player', {
+        layoutControls:{fillToContainer:true, allowDownload:false, playbackRateEnabled:false},
+        vastOptions:{ adList:[{roll:'preRoll', vastTag: VAST_TAG, skippable:true}], vpaidMode:'INSECURE'}
+      });
+      fp.on('adEnded', creditTask);
     }
-
-    // ===== Load config from backend =====
-    let CFG = {
-      vastTag:'', reward:0.01, min_withdraw:1,
-      ref_bonus_pct:17, balance:0, username:'User'
-    };
-    async function post(url, body){
-      const r = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-      return r.ok ? r.json() : {ok:false,error:r.statusText};
-    }
-    async function loadConfig(){
-      try{
-        const data = await post('/api/config',{initData});
-        if(data && data.ok){
-          CFG = Object.assign(CFG,data);
-        }else{
-          // fallback username from Telegram JS
-          const u = tg?.initDataUnsafe?.user;
-          if (u) CFG.username = (u.username ? '@'+u.username : (u.first_name||'User'));
-        }
-      }catch(e){}
-      // Fill UI
-      const uname = CFG.username || 'User';
-      U('uname').textContent = uname; U('uname2').textContent = uname;
-      U('joinedTxt').textContent = 'Joined '+fmtDate(LS.getItem('joined_at'));
-      U('joinedTxt2').textContent = fmtDate(LS.getItem('joined_at'));
-      U('balance').textContent = (CFG.balance||0).toFixed(2);
-      U('balance2').textContent = (CFG.balance||0).toFixed(2);
-      U('minWdTxt').textContent = CFG.min_withdraw; U('minWdTxt2').textContent = CFG.min_withdraw;
-      U('refPct').textContent = (CFG.ref_bonus_pct||17)+'%';
-
-      const base = (CFG.base_url || window.location.origin);
-      const me = tg?.initDataUnsafe?.user;
-      const uid = me?.id || 'user';
-      const ref = `https://t.me/${(tg?.initDataUnsafe?.start_param ? tg.initDataUnsafe.start_param : 'watch2earnreal_bot')}?start=${uid}`;
-      U('reflink').value = ref; U('refLink2').value = ref;
-    }
-
-    // ===== Copy ref link
-    function copyRef(inputId){
-      const el = U(inputId); el.select(); el.setSelectionRange(0,99999);
-      document.execCommand('copy');
-      tg?.showPopup?.({title:'Copied',message:'Referral link copied.',buttons:[{type:'ok'}]});
-    }
-    U('copyRef').onclick=()=>copyRef('reflink');
-    U('copyRef2').onclick=()=>copyRef('refLink2');
-
-    // ===== Check-in (local UI) =====
-    const REW = [2,4,6,8,10,12,15]; // contoh angka bonus
-    function renderDays(){
-      const todayIdx = new Date().getDay(); // demo; bebas logicmu
-      const streak = Number(LS.getItem('streak')||0);
-      const day = Number(LS.getItem('day')||1);
-      const daysWrap = U('days'); daysWrap.innerHTML='';
-      for(let i=1;i<=7;i++){
-        const d=document.createElement('div');
-        d.className = 'day'+(i<day?' done':'')+(i===day?' active':'')+(i>day?' lock':'');
-        d.innerHTML = `Day ${i}<br><span style="font-weight:900">${REW[i-1]}</span>`;
-        daysWrap.appendChild(d);
+    // Fallback timer — credits after FALLBACK_SEC of foreground playback
+    clearInterval(fallbackTimer);
+    fallbackTimer = setInterval(()=>{
+      if(!v.paused && document.visibilityState==='visible'){
+        watched++;
+        if(watched>=FALLBACK_SEC){ clearInterval(fallbackTimer); creditTask(); }
       }
-      U('bar').style.width = ((day-1)/7*100)+'%';
-      U('btnClaim').textContent = `Claim ${REW[Math.max(0,day-1)]} NOTCOIN`;
-    }
-    U('btnClaim').onclick = async()=>{
-      // kirim ke server kalau punya endpoint /api/bonus/claim
-      // const r = await post('/api/bonus/claim',{initData});
-      // if(!r.ok){ tg?.showPopup?.({title:'Failed',message:r.error||'unknown',buttons:[{type:'ok'}]}); return; }
-      let d = Number(LS.getItem('day')||1);
-      if (d<=7){ d++; LS.setItem('day', String(d)); renderDays(); }
-      tg?.showPopup?.({title:'Claimed',message:'Daily bonus claimed.',buttons:[{type:'ok'}]});
-    };
+    },1000);
+    try{ await v.play(); }catch(e){}
+  });
 
-    // ===== ADS (VAST pre-roll + fallback) =====
-    let fp=null, adDone=false, taskId=null, watched=0, lastT=0, minWatch=15;
-    const v = U('player');
-    U('startTask').onclick = async()=>{
-      if (!CFG.vastTag){
-        tg?.showPopup?.({title:'Config',message:'VAST tag is not set on server.',buttons:[{type:'ok'}]});
-        return;
-      }
-      const s = await post('/api/task/start',{initData});
-      if(!s.ok){ tg?.showPopup?.({title:'Failed',message:s.error||'unknown',buttons:[{type:'ok'}]}); return; }
-      taskId = s.task_id; minWatch = s.min_watch_sec || 15; U('need').textContent = String(minWatch);
-      U('playerWrap').classList.remove('hidden');
+  // === Ads: Monetag SDK buttons ===
+  const g = (name)=>window[name];
+  document.getElementById('btnRewPopup').onclick = ()=> g('show_9711117')('pop').then(creditTask).catch(()=>{});
+  document.getElementById('btnRewInter').onclick = ()=> g('show_9711117')().then(creditTask).catch(()=>{});
+  document.getElementById('btnInApp').onclick   = ()=> g('show_9711117')({type:'inApp',inAppSettings:{frequency:2,capping:0.1,interval:30,timeout:5,everyPage:false}}).then(creditTask).catch(()=>{});
 
-      v.innerHTML = '<source src="data:video/mp4;base64," type="video/mp4">';
-      if (fp && fp.destroy) { try{fp.destroy()}catch(e){} }
-      fp = fluidPlayer('player',{
-        layoutControls:{fillToContainer:true,allowDownload:false,playbackRateEnabled:false},
-        vastOptions:{adList:[{roll:'preRoll',vastTag:CFG.vastTag,skippable:true}],vpaidMode:'INSECURE',maxAllowedVastTagRedirects:5}
+  // === Withdraw (local demo only) ===
+  document.getElementById('btnWithdraw').addEventListener('click',()=>{
+    const amt = parseFloat((document.getElementById('wdAmt').value||'0').replace(',','.'));
+    const addr = document.getElementById('wdAddr').value.trim();
+    if(!amt || amt<MIN_WITHDRAW) return toast(`Minimum withdraw is ${MIN_WITHDRAW} USDT`, true);
+    if(amt>state.balance) return toast(`Insufficient balance`, true);
+    if(addr.length<10) return toast(`Enter a valid wallet address`, true);
+    state.balance -= amt; // hold
+    save();
+    toast(`Withdrawal requested: ${amt.toFixed(2)} USDT to ${addr}`);
+  });
+
+  // === Tabs ===
+  const screens = {
+    home: document.getElementById('screen-home'),
+    ads: document.getElementById('screen-ads'),
+    refer: document.getElementById('screen-refer'),
+    profile: document.getElementById('screen-profile'),
+  };
+  document.querySelectorAll('.tab').forEach(b=>{
+    b.addEventListener('click',()=>{
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      b.classList.add('active');
+      const k=b.dataset.tab;
+      Object.entries(screens).forEach(([key,el])=>{
+        el.classList.toggle('hidden', key!==k);
       });
-      fp.on('adEnded', async()=>{
-        if(adDone) return; adDone=true;
-        const r = await post('/api/task/complete',{initData,task_id:taskId});
-        if(r.ok){ await loadConfig(); tg?.showPopup?.({title:'Success',message:`+${CFG.reward} USDT`,buttons:[{type:'ok'}]}); }
-      });
+      window.scrollTo({top:0,behavior:'instant'});
+    });
+  });
 
-      watched=0; lastT=0; U('wat').textContent='0';
-      v.addEventListener('timeupdate', ()=>{
-        const dt = Math.max(0, v.currentTime-lastT); lastT=v.currentTime;
-        if (document.visibilityState==='visible' && !v.paused) watched+=dt;
-        U('wat').textContent = String(Math.floor(watched));
-        if(!adDone && watched>=minWatch){
-          adDone=true; post('/api/task/complete',{initData,task_id:taskId}).then(async r=>{
-            if(r.ok){ await loadConfig(); tg?.showPopup?.({title:'Success',message:`+${CFG.reward} USDT (fallback)`,buttons:[{type:'ok'}]}); }
-          });
-        }
-      });
-      try{ await v.play(); }catch{}
-    };
+  // Copy helpers
+  document.getElementById('copyRef').onclick = ()=>copy(refUrl);
+  document.getElementById('copyRef2').onclick= ()=>copy(refUrl);
+  function copy(txt){
+    navigator.clipboard.writeText(txt).then(()=>toast('Copied'));
+  }
 
-    // Monetag in-app helpers (optional)
-    window.show_9711117 = window.show_9711117 || function(){ return Promise.reject(); };
-    U('btnPopup').onclick = ()=>window.show_9711117('pop').then(()=>tg?.showPopup?.({title:'Info',message:'Rewarded popup finished.',buttons:[{type:'ok'}]}));
-    U('btnInter').onclick = ()=>window.show_9711117().then(()=>tg?.showPopup?.({title:'Info',message:'Interstitial finished.',buttons:[{type:'ok'}]}));
+  // Toast via Telegram popup when available
+  function toast(msg, isErr=false){
+    if(tg?.showPopup){ tg.showPopup({title:isErr?'Oops':'Success',message:msg,buttons:[{type:'ok'}]}); }
+    else alert(msg);
+  }
 
-    // ===== Withdraw
-    U('reqWd').onclick = async()=>{
-      const amount = Number(U('wdAmt').value||'0'); const address = U('wdAddr').value.trim();
-      if (!amount || !address) { tg?.showPopup?.({title:'Invalid',message:'Fill amount and wallet address.',buttons:[{type:'ok'}]}); return; }
-      const r = await post('/api/withdraw',{initData,amount,address});
-      if(r.ok){ tg?.showPopup?.({title:'Submitted',message:`Request ${amount} USDT created.`,buttons:[{type:'ok'}]}); }
-      else { tg?.showPopup?.({title:'Failed',message:r.error||'unknown',buttons:[{type:'ok'}]}); }
-    };
-
-    // ===== Init
-    renderDays();
-    loadConfig();
-  </script>
+  // Sync UI with state
+  function syncUI(){
+    document.getElementById('balTop').textContent  = state.balance.toFixed(2);
+    document.getElementById('balProf').textContent = state.balance.toFixed(2);
+    document.getElementById('totalEarn').textContent = state.totalEarned.toFixed(2)+' USDT';
+    document.getElementById('tasksDone').textContent = state.tasksDone;
+    document.getElementById('streakChip').textContent = state.streak+' 🔥';
+    updateCheckinUI();
+  }
+  syncUI();
+})();
+</script>
 </body>
 </html>
