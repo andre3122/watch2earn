@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,57 +8,73 @@
 <!-- Telegram WebApp SDK -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-<!-- Fluid Player (VAST) -->
+<!-- Fluid Player (untuk VAST) -->
 <link rel="preconnect" href="https://cdn.fluidplayer.com" crossorigin>
 <script defer src="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js"></script>
 
-<!-- Monetag (libtl) SDK – ganti data-zone sesuai punyamu -->
+<!-- Monetag (libtl) – ganti data-zone dengan punyamu -->
 <script src="https://libtl.com/sdk.js" data-zone="9711117" data-sdk="show_9711117"></script>
 
 <style>
 :root{
-  --bg:#0b0f14;--card:#0f1622;--glass:rgba(255,255,255,.06);
-  --fg:#eaf1f8;--muted:#9eb2c6;--line:#1c2a3a;--acc:#6ae3ff;--acc2:#7affb1;
+  --bg:#f7f9fc; --card:#ffffff; --muted:#637083; --fg:#0f172a; --line:#e6ebf2;
+  --grad1:#6ea8ff; --grad2:#6ef3c5; --brand:#4f46e5; --primary:#2563eb; --danger:#ef4444;
 }
 *{box-sizing:border-box} html,body{height:100%}
-body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:radial-gradient(1000px 500px at 10% -10%,#123,transparent),radial-gradient(800px 400px at 100% 0%,#18293c,transparent),var(--bg);color:var(--fg)}
+body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--fg)}
 .app{max-width:960px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
-.header{position:sticky;top:0;z-index:5;backdrop-filter:blur(8px);background:linear-gradient(180deg,rgba(10,14,20,.85),rgba(10,14,20,.55));border-bottom:1px solid var(--line)}
+
+/* Header */
+.header{position:sticky;top:0;z-index:5;background:#fffcc;
+  background:linear-gradient(180deg,#ffffff 60%,rgba(255,255,255,.85));
+  border-bottom:1px solid var(--line)}
 .header .row{display:flex;align-items:center;gap:12px;padding:12px 16px}
 .brand{display:flex;align-items:center;gap:10px}
-.brand .logo{width:36px;height:36px;border-radius:12px;background:linear-gradient(145deg,#3d2fff,#00c8ff);display:grid;place-items:center;box-shadow:0 8px 20px rgba(0,200,255,.35)}
-.brand .logo span{font-weight:800;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.35)}
-.brand .name{font-weight:800;letter-spacing:.2px}
-.pill{font-size:12px;color:#0a141e;background:linear-gradient(145deg,var(--acc),var(--acc2));padding:6px 10px;border-radius:999px;font-weight:700}
+.logo{width:38px;height:38px;border-radius:12px;
+  background:linear-gradient(145deg,var(--grad1),var(--grad2));display:grid;place-items:center;
+  color:#fff;font-weight:800;box-shadow:0 8px 24px rgba(80,130,255,.35)}
+.name{font-weight:800;letter-spacing:.2px}
+.badge{margin-left:auto;padding:6px 10px;border-radius:999px;
+  background:#eef2ff;color:#3730a3;font-weight:700;font-size:12px}
 
+/* Content & cards */
 .content{padding:16px;flex:1}
 .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
-.card{grid-column:span 12;background:linear-gradient(180deg,var(--card),#0c1320);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 12px 30px rgba(0,0,0,.35)}
-.card h3{margin:0 0 6px 0;font-size:16px}
+.card{grid-column:span 12;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;
+  box-shadow:0 10px 24px rgba(15,23,42,.06)}
+.card h3{margin:0 0 8px 0;font-size:16px}
 .row{display:flex;justify-content:space-between;gap:10px;align-items:center}
-.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.kpi .it{background:var(--glass);border:1px solid var(--line);border-radius:14px;padding:10px}
+.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kpi .it{background:linear-gradient(180deg,#f8fbff,#f1f5ff);border:1px solid var(--line);border-radius:14px;padding:12px}
+.kpi .it small{color:var(--muted)}
 .kpi .it b{font-size:18px}
-.btn{appearance:none;border:0;border-radius:12px;padding:12px 16px;background:#152435;color:#eaf1f8;font-weight:700;cursor:pointer}
+
+/* Buttons */
+.btn{appearance:none;border:0;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer}
 .btn[disabled]{opacity:.6;cursor:not-allowed}
-.btn.acc{background:linear-gradient(145deg,#1b9dfc,#27ffd2);color:#0a1414}
-.btn.ghost{background:transparent;border:1px solid var(--line)}
+.btn.primary{background:linear-gradient(145deg,var(--grad1),var(--grad2));color:#073b2d}
+.btn.outline{background:#fff;border:1px solid var(--line);color:var(--fg)}
+.btn.danger{background:linear-gradient(145deg,#ff9aa5,#ff6b6b);color:#4a0a0a}
+
+/* Video */
 video{width:100%;border-radius:14px;border:1px solid var(--line)}
 
 /* Sections */
-.section{display:none;animation:fade .25s ease}
+.section{display:none;animation:fade .2s ease}
 .section.active{display:block}
 @keyframes fade{from{opacity:.4;transform:translateY(4px)}to{opacity:1;transform:none}}
 
 /* Bottom Nav */
-.nav{position:sticky;bottom:0;z-index:5;background:linear-gradient(0deg,rgba(10,14,20,.95),rgba(10,14,20,.7));border-top:1px solid var(--line);backdrop-filter:blur(8px)}
-.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:8px}
+.nav{position:sticky;bottom:0;z-index:5;background:#fff;border-top:1px solid var(--line)}
+.tabs{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;padding:8px}
 .tab{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px;border-radius:12px;color:var(--muted);font-size:12px}
-.tab.active{background:var(--glass);color:var(--fg);border:1px solid var(--line)}
+.tab.active{background:#eef2ff;color:#1e293b;border:1px solid var(--line)}
 .tab i{font-style:normal}
 
-/* Responsive columns */
-@media(min-width:720px){ .card.col6{grid-column:span 6} }
+/* Responsive */
+@media(min-width:720px){ .col6{grid-column:span 6} }
+input,select{width:100%;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;color:var(--fg)}
+.helper{color:var(--muted);font-size:12px}
 </style>
 </head>
 <body>
@@ -68,11 +84,11 @@ video{width:100%;border-radius:14px;border:1px solid var(--line)}
   <div class="header">
     <div class="row">
       <div class="brand">
-        <div class="logo"><span>W2E</span></div>
-        <div class="name">Watch2Earn</div>
+        <div class="logo">W2E</div>
+        <div class="name" data-i18n="brand">Watch2Earn</div>
       </div>
-      <div class="pill" id="uName">Guest</div>
-      <div style="margin-left:auto" class="muted" id="uId"></div>
+      <div class="badge" id="uName">Guest</div>
+      <div class="helper" id="uId"></div>
     </div>
   </div>
 
@@ -83,119 +99,102 @@ video{width:100%;border-radius:14px;border:1px solid var(--line)}
     <section id="home" class="section active">
       <div class="grid">
         <div class="card">
-          <h3>Ringkasan</h3>
+          <h3 data-i18n="overview_title">Overview</h3>
           <div class="kpi">
-            <div class="it"><div class="muted">Saldo</div><b id="kpiBalance">0.00 USDT</b></div>
-            <div class="it"><div class="muted">Selesai</div><b id="kpiTasks">0</b></div>
-            <div class="it"><div class="muted">Min WD</div><b id="kpiMin">1 USDT</b></div>
+            <div class="it"><small data-i18n="balance">Balance</small><b id="kpiBalance">0.00 USDT</b></div>
+            <div class="it"><small data-i18n="earned">Total Earned</small><b id="kpiEarned">0.00 USDT</b></div>
+            <div class="it"><small data-i18n="completed">Tasks Done</small><b id="kpiTasks">0</b></div>
+            <div class="it"><small data-i18n="streak">Streak</small><b id="kpiStreak">0 🔥</b></div>
           </div>
         </div>
 
         <div class="card col6">
-          <h3>Mulai Cepat</h3>
-          <div class="row">
-            <div class="muted">Pre-roll Monetag (VAST)</div>
-            <button class="btn acc" id="btnStartVast">Tonton ▶</button>
+          <h3 data-i18n="daily_checkin">Daily Check-in Bonus</h3>
+          <div class="helper" data-i18n="checkin_hint">Claim your daily reward and keep your streak!</div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn primary" id="btnCheckin" data-i18n="claim_btn">Claim Today</button>
+            <div class="helper" id="ciStatus"></div>
+          </div>
+        </div>
+
+        <div class="card col6">
+          <h3 data-i18n="quick_start">Ads Task Overview</h3>
+          <div class="row" style="gap:8px;flex-wrap:wrap">
+            <div class="helper" data-i18n="ads_hint">Start a task and watch till completion to earn rewards.</div>
+            <button class="btn primary" id="btnStartTask" data-i18n="start_task">Start Task</button>
           </div>
           <div id="vastWrap" style="margin-top:10px;display:none">
             <video id="vastVideo" controls preload="metadata" playsinline webkit-playsinline></video>
-            <div class="muted" style="margin-top:8px">Fallback: <span id="fbNow">0</span>s / <span id="fbNeed">15</span>s</div>
-          </div>
-        </div>
-
-        <div class="card col6">
-          <h3>Interstitial & Popup (Monetag SDK)</h3>
-          <div class="row" style="gap:8px;flex-wrap:wrap">
-            <button class="btn" id="btnRewardInt">Rewarded Interstitial</button>
-            <button class="btn" id="btnRewardPop">Rewarded Popup</button>
-            <button class="btn ghost" id="btnAutoInApp">Enable Auto In-App</button>
-          </div>
-          <div class="muted" style="margin-top:6px">
-            Interstitial/popup memberi reward saat selesai (Promise resolve). Cocok untuk task kecil.
+            <div class="helper" style="margin-top:8px"><span data-i18n="fallback">Fallback</span>: <span id="fbNow">0</span>s / <span id="fbNeed">15</span>s</div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- TASKS -->
-    <section id="tasks" class="section">
+    <!-- ADS TASK (khusus tugas iklan) -->
+    <section id="ads" class="section">
       <div class="grid">
         <div class="card">
-          <h3>Daftar Tugas</h3>
-          <div class="muted">Pilih format iklan untuk mendapat reward.</div>
-          <div style="display:grid;gap:10px;margin-top:10px">
-            <div class="row" style="background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:10px">
-              <div>
-                <b>Task #VAST-01</b><div class="muted">Pre-roll Monetag (wajib tonton sampai selesai)</div>
-              </div>
-              <button class="btn acc" id="taskVastBtn">Start ▶</button>
+          <h3 data-i18n="ads_title">Ads Task</h3>
+          <div class="helper" data-i18n="ads_sub">Pick a format below. Rewards are added after completion.</div>
+          <div style="display:grid;gap:10px;margin-top:12px">
+            <div class="row" style="background:#f8fbff;border:1px solid var(--line);border-radius:12px;padding:10px">
+              <div><b data-i18n="ads_item1">Video Task (pre-roll)</b><div class="helper" data-i18n="ads_item1_hint">Watch the video until it finishes</div></div>
+              <button class="btn primary" id="taskVastBtn" data-i18n="start_task">Start Task</button>
             </div>
-            <div class="row" style="background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:10px">
-              <div>
-                <b>Task #POP-01</b><div class="muted">Rewarded Popup (sekali klik)</div>
-              </div>
-              <button class="btn" id="taskPopBtn">Start ▶</button>
+            <div class="row" style="background:#f8fffb;border:1px solid var(--line);border-radius:12px;padding:10px">
+              <div><b data-i18n="ads_item2">Rewarded Popup</b><div class="helper" data-i18n="ads_item2_hint">One tap to open and complete</div></div>
+              <button class="btn outline" id="taskPopBtn" data-i18n="start_task">Start Task</button>
             </div>
-            <div class="row" style="background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:10px">
-              <div>
-                <b>Task #INT-01</b><div class="muted">Rewarded Interstitial (layar penuh)</div>
-              </div>
-              <button class="btn" id="taskIntBtn">Start ▶</button>
+            <div class="row" style="background:#fff8fb;border:1px solid var(--line);border-radius:12px;padding:10px">
+              <div><b data-i18n="ads_item3">Rewarded Interstitial</b><div class="helper" data-i18n="ads_item3_hint">Full-screen view</div></div>
+              <button class="btn outline" id="taskIntBtn" data-i18n="start_task">Start Task</button>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- CHECK-IN -->
-    <section id="checkin" class="section">
+    <!-- TG TASKS (placeholder) -->
+    <section id="tg" class="section">
       <div class="grid">
-        <div class="card col6">
-          <h3>Daily Check-in</h3>
-          <div class="muted" id="ciInfo">Check-in harian untuk bonus.</div>
-          <div class="row" style="margin-top:10px">
-            <button class="btn acc" id="btnCheckin">Check-in Sekarang</button>
-            <div class="muted" id="ciStatus"></div>
-          </div>
-        </div>
-        <div class="card col6">
-          <h3>Streak</h3>
-          <div class="muted">Pertahankan streak untuk bonus ekstra.</div>
-          <div id="ciStreak" style="margin-top:8px;font-weight:800;font-size:22px">0 🔥</div>
+        <div class="card">
+          <h3 data-i18n="tg_title">Telegram Tasks</h3>
+          <div class="helper" data-i18n="tg_empty">No tasks available</div>
         </div>
       </div>
     </section>
 
-    <!-- WALLET -->
-    <section id="wallet" class="section">
-      <div class="grid">
-        <div class="card col6">
-          <h3>Dompet</h3>
-          <div class="muted">Saldo kamu: <b id="wlBalance">0.00 USDT</b></div>
-          <div class="muted">Min WD: <b id="wlMin">1 USDT</b></div>
-          <div style="display:flex;gap:8px;margin-top:10px">
-            <input id="wdAddr" placeholder="Alamat USDT (TRC20/TON/...)">
-            <button class="btn acc" id="btnWithdraw">Ajukan Withdraw</button>
-          </div>
-          <div class="muted" id="wdMsg" style="margin-top:6px"></div>
-        </div>
-        <div class="card col6">
-          <h3>Riwayat</h3>
-          <div class="muted">Transaksi & reward terakhir (coming soon)</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- REFERRAL -->
+    <!-- REFER -->
     <section id="ref" class="section">
       <div class="grid">
         <div class="card">
-          <h3>Referral</h3>
-          <div class="muted">Ajak teman: kamu dapat bonus <span id="rfPct">10%</span> dari task mereka.</div>
+          <h3 data-i18n="ref_title">Refer & Earn Forever</h3>
+          <div class="helper"><span data-i18n="ref_text1">Earn</span> <b id="rfPct">10%</b> <span data-i18n="ref_text2">of your friends’ earnings for life.</span></div>
           <div style="display:flex;gap:8px;margin-top:10px">
             <input id="rfLink" readonly>
-            <button class="btn" id="btnCopyRef">Salin</button>
+            <button class="btn outline" id="btnCopyRef" data-i18n="copy_btn">Copy</button>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WITHDRAW -->
+    <section id="withdraw" class="section">
+      <div class="grid">
+        <div class="card col6">
+          <h3 data-i18n="wd_title">Withdraw Funds</h3>
+          <div class="helper"><span data-i18n="your_balance">Balance</span>: <b id="wlBalance">0.00 USDT</b></div>
+          <div class="helper"><span data-i18n="min_wd">Minimum</span>: <b id="wlMin">1 USDT</b></div>
+          <div style="display:grid;gap:8px;margin-top:10px">
+            <input id="wdAddr" placeholder="Wallet / account address">
+            <button class="btn primary" id="btnWithdraw" data-i18n="withdraw_btn">Request Withdrawal</button>
+            <div class="helper" id="wdMsg"></div>
+          </div>
+        </div>
+        <div class="card col6">
+          <h3 data-i18n="history_title">History</h3>
+          <div class="helper" data-i18n="history_hint">Transactions & recent rewards (coming soon)</div>
         </div>
       </div>
     </section>
@@ -204,14 +203,20 @@ video{width:100%;border-radius:14px;border:1px solid var(--line)}
     <section id="profile" class="section">
       <div class="grid">
         <div class="card col6">
-          <h3>Profil</h3>
-          <div class="muted" id="pfInfo">Mengambil profil…</div>
-          <button class="btn ghost" id="btnRefresh">Refresh</button>
+          <h3 data-i18n="profile_title">Profile</h3>
+          <div><b id="profName">User</b> • <span class="helper" id="profJoin"></span></div>
+          <div class="helper" id="pfInfo" data-i18n="profile_loading">Loading profile…</div>
+          <div class="row" style="gap:8px;margin-top:10px">
+            <button class="btn outline" id="btnRefresh" data-i18n="refresh_btn">Refresh</button>
+            <div>
+              <div class="helper" data-i18n="lang_label">Language</div>
+              <select id="langSel"><option value="en">English</option><option value="id">Indonesia</option></select>
+            </div>
+          </div>
         </div>
         <div class="card col6">
-          <h3>Info App</h3>
-          <div class="muted">Versi UI: <b>2.0 (multi-menu)</b></div>
-          <div class="muted">Player: Fluid (VAST). SDK: Monetag (libtl)</div>
+          <h3 data-i18n="about_title">App Info</h3>
+          <div class="helper">UI: <b>Light 1.0</b> • Player: Fluid (VAST) • SDK: Monetag</div>
         </div>
       </div>
     </section>
@@ -221,143 +226,170 @@ video{width:100%;border-radius:14px;border:1px solid var(--line)}
   <!-- Bottom Nav -->
   <div class="nav">
     <div class="tabs" id="tabs">
-      <div class="tab active" data-go="home"><i>🏠</i>Home</div>
-      <div class="tab" data-go="tasks"><i>🎯</i>Tasks</div>
-      <div class="tab" data-go="checkin"><i>📅</i>Check-in</div>
-      <div class="tab" data-go="wallet"><i>💼</i>Wallet</div>
-      <div class="tab" data-go="ref"><i>👥</i>Referral</div>
-      <!-- Profile via avatar: -->
+      <div class="tab active" data-go="home"><i>🏠</i><span data-i18n="tab_home">Home</span></div>
+      <div class="tab" data-go="ads"><i>🄰</i><span data-i18n="tab_ads">Ads Task</span></div>
+      <div class="tab" data-go="tg"><i>✔️</i><span data-i18n="tab_tg">TG Tasks</span></div>
+      <div class="tab" data-go="ref"><i>👥</i><span data-i18n="tab_ref">Refer</span></div>
+      <div class="tab" data-go="withdraw"><i>💼</i><span data-i18n="tab_withdraw">Withdraw</span></div>
+      <div class="tab" data-go="profile"><i>👤</i><span data-i18n="tab_profile">Profile</span></div>
     </div>
   </div>
 </div>
 
 <script>
-/* ---------- Telegram init ---------- */
+/* ---------- I18N (EN/ID) ---------- */
+const I18N = {
+  en:{brand:"Watch2Earn",overview_title:"Overview",balance:"Balance",earned:"Total Earned",completed:"Tasks Done",streak:"Streak",
+      daily_checkin:"Daily Check-in Bonus",checkin_hint:"Claim your daily reward and keep your streak!",claim_btn:"Claim Today",
+      quick_start:"Ads Task Overview",ads_hint:"Start a task and watch till completion to earn rewards.",start_task:"Start Task",
+      fallback:"Fallback",ads_title:"Ads Task",ads_sub:"Pick a format below. Rewards are added after completion.",
+      ads_item1:"Video Task (pre-roll)",ads_item1_hint:"Watch the video until it finishes",
+      ads_item2:"Rewarded Popup",ads_item2_hint:"One tap to open and complete",
+      ads_item3:"Rewarded Interstitial",ads_item3_hint:"Full-screen view",
+      tg_title:"Telegram Tasks",tg_empty:"No tasks available",ref_title:"Refer & Earn Forever",
+      ref_text1:"Earn",ref_text2:"of your friends’ earnings for life.",copy_btn:"Copy",
+      wd_title:"Withdraw Funds",your_balance:"Balance",min_wd:"Minimum",withdraw_btn:"Request Withdrawal",
+      history_title:"History",history_hint:"Transactions & recent rewards (coming soon)",
+      profile_title:"Profile",profile_loading:"Loading profile…",refresh_btn:"Refresh",lang_label:"Language",
+      about_title:"App Info",tab_home:"Home",tab_ads:"Ads Task",tab_tg:"TG Tasks",tab_ref:"Refer",tab_withdraw:"Withdraw",tab_profile:"Profile",
+      // popups & runtime
+      fail:"Failed",verify_fail:"Verification failed",config:"Config",vast_not_set:"Ad source not configured.",
+      success:"Success",credited:"+{AMOUNT} USDT credited.",credited_fb:"+{AMOUNT} USDT (fallback).",ad_canceled:"Ad canceled/failed."},
+  id:{brand:"Watch2Earn",overview_title:"Ringkasan",balance:"Saldo",earned:"Total Diterima",completed:"Tugas Selesai",streak:"Streak",
+      daily_checkin:"Bonus Check-in Harian",checkin_hint:"Klaim reward harian dan jaga streak!",claim_btn:"Klaim Hari Ini",
+      quick_start:"Ringkasan Tugas Iklan",ads_hint:"Mulai task dan tonton sampai selesai untuk mendapat reward.",start_task:"Mulai Tugas",
+      fallback:"Fallback",ads_title:"Tugas Iklan",ads_sub:"Pilih format di bawah. Reward masuk setelah selesai.",
+      ads_item1:"Tugas Video (pre-roll)",ads_item1_hint:"Tonton video sampai selesai",
+      ads_item2:"Rewarded Popup",ads_item2_hint:"Sekali tap lalu selesai",
+      ads_item3:"Rewarded Interstitial",ads_item3_hint:"Tampilan layar penuh",
+      tg_title:"Tugas Telegram",tg_empty:"Belum ada tugas",ref_title:"Ajak Teman & Dapat Selamanya",
+      ref_text1:"Dapat",ref_text2:"dari penghasilan teman selamanya.",copy_btn:"Salin",
+      wd_title:"Tarik Dana",your_balance:"Saldo",min_wd:"Minimum",withdraw_btn:"Ajukan Penarikan",
+      history_title:"Riwayat",history_hint:"Transaksi & reward terbaru (segera hadir)",
+      profile_title:"Profil",profile_loading:"Memuat profil…",refresh_btn:"Muat Ulang",lang_label:"Bahasa",
+      about_title:"Info Aplikasi",tab_home:"Beranda",tab_ads:"Tugas Iklan",tab_tg:"Tugas TG",tab_ref:"Referral",tab_withdraw:"Tarik",tab_profile:"Profil",
+      fail:"Gagal",verify_fail:"Verifikasi gagal",config:"Konfigurasi",vast_not_set:"Sumber iklan belum disetel.",
+      success:"Berhasil",credited:"+{AMOUNT} USDT dikredit.",credited_fb:"+{AMOUNT} USDT (fallback).",ad_canceled:"Iklan dibatalkan/gagal."}
+};
 const tg = window.Telegram.WebApp; tg.expand();
 const initData = tg.initData || '';
+const userLang = (tg.initDataUnsafe?.user?.language_code || '').slice(0,2).toLowerCase();
+const savedLang = localStorage.getItem('w2e_lang');
+let LANG = savedLang || (userLang==='id'?'id':'en');
+document.documentElement.lang = LANG;
+function t(k,vars={}){const s=(I18N[LANG][k]||I18N.en[k]||k);return Object.keys(vars).reduce((a,b)=>a.replaceAll(`{${b}}`,vars[b]),s)}
+function applyI18n(){document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n))}
+applyI18n();
 
-/* ---------- Helpers ---------- */
-const $ = (sel)=>document.querySelector(sel);
-const api = (p,body)=>fetch(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})}).then(r=>r.json());
+/* ---------- Helpers & state ---------- */
+const $=s=>document.querySelector(s);
+const api=(p,b)=>fetch(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})}).then(r=>r.json());
+let CFG={vastTag:'',reward:0.01,min_withdraw:1,ref_pct:10,balance:0,total_tasks:0,username:'Guest',user_id:'',streak:0,earned:0};
+let FP=null,adDone=false,fbTimer=0,fbNeed=15,lastT=0;
 
-/* ---------- State ---------- */
-let CFG = { vastTag:'', reward:0.01, min_withdraw:1, ref_pct:10, balance:0, total_tasks:0, username:'Guest', user_id:'' };
-let FP=null, adDone=false, fbTimer=0, fbNeed=15, lastT=0;
-
-/* ---------- Tabs ---------- */
-const sections = Array.from(document.querySelectorAll('.section'));
-document.getElementById('tabs').addEventListener('click',e=>{
-  const t = e.target.closest('.tab'); if(!t) return;
+/* Tabs */
+const sections=[...document.querySelectorAll('.section')];
+$('#tabs').addEventListener('click',e=>{
+  const tEl=e.target.closest('.tab'); if(!tEl) return;
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-  t.classList.add('active');
-  const go = t.dataset.go;
-  sections.forEach(s=>s.classList.toggle('active', s.id===go));
+  tEl.classList.add('active'); const go=tEl.dataset.go;
+  sections.forEach(s=>s.classList.toggle('active',s.id===go));
   if(go==='profile') loadConfig();
 });
 
-/* ---------- Load Config ---------- */
-async function loadConfig() {
-  const d = await api('/api/config',{initData});
-  if(!d.ok){ tg.showPopup({title:'Gagal',message:'Verifikasi gagal',buttons:[{type:'ok'}]}); return }
-  CFG = d;
-  $('#uName').textContent = d.username||'User';
-  $('#uId').textContent = d.user_id ? ('#'+d.user_id) : '';
-  $('#kpiBalance').textContent = `${d.balance.toFixed(2)} USDT`;
-  $('#kpiTasks').textContent = d.total_tasks;
-  $('#kpiMin').textContent = `${d.min_withdraw} USDT`;
-  $('#wlBalance').textContent = `${d.balance.toFixed(2)} USDT`;
-  $('#wlMin').textContent = `${d.min_withdraw} USDT`;
-  $('#rfPct').textContent = `${d.ref_pct}%`;
-  $('#fbNeed').textContent = (d.min_watch_sec || 15);
-  fbNeed = d.min_watch_sec || 15;
+/* Language switcher */
+const langSel=$('#langSel'); langSel.value=LANG;
+langSel.addEventListener('change',()=>{LANG=langSel.value;localStorage.setItem('w2e_lang',LANG);document.documentElement.lang=LANG;applyI18n()});
 
-  // Get referral link
-  try{
-    const rl = await api('/api/ref/link',{initData});
-    if(rl.ok) $('#rfLink').value = rl.link;
-  }catch(e){}
+/* Load config from backend */
+async function loadConfig(){
+  const d=await api('/api/config',{initData});
+  if(!d.ok){tg.showPopup({title:t('fail'),message:t('verify_fail'),buttons:[{type:'ok'}]});return}
+  CFG=d;
+  $('#uName').textContent=d.username||'User';
+  $('#uId').textContent=d.user_id?('#'+d.user_id):'';
+  $('#kpiBalance').textContent=`${d.balance.toFixed(2)} USDT`;
+  $('#kpiEarned').textContent=`${(d.earned||0).toFixed(2)} USDT`;
+  $('#kpiTasks').textContent=d.total_tasks||0;
+  $('#kpiStreak').textContent=`${d.streak||0} 🔥`;
+  $('#wlBalance').textContent=`${d.balance.toFixed(2)} USDT`;
+  $('#wlMin').textContent=`${d.min_withdraw} USDT`;
+  $('#rfPct').textContent=`${d.ref_pct}%`;
+  $('#fbNeed').textContent=(d.min_watch_sec||15); fbNeed=d.min_watch_sec||15;
+  $('#profName').textContent=d.username||'User';
+  $('#profJoin').textContent=d.joined_at?`Joined ${d.joined_at}`:'';
+  try{const rl=await api('/api/ref/link',{initData}); if(rl.ok) $('#rfLink').value=rl.link;}catch(_){}
 }
 loadConfig();
 
-/* ---------- VAST (Fluid Player) ---------- */
-const btnStartVast = $('#btnStartVast');
-const vastWrap = $('#vastWrap'); const v = $('#vastVideo');
-btnStartVast.addEventListener('click', async ()=>{
-  if(!CFG.vastTag){ tg.showPopup({title:'Config',message:'VAST tag belum diset.',buttons:[{type:'ok'}]}); return }
-  const s = await api('/api/task/start',{initData}); if(!s.ok){ tg.showPopup({title:'Gagal',message:s.error||'unknown',buttons:[{type:'ok'}]}); return }
-  const taskId = s.task_id; adDone=false; lastT=0; $('#fbNow').textContent='0';
+/* ----- START TASK (Video pre-roll) ----- */
+const startTaskBtn=$('#btnStartTask'); const vastWrap=$('#vastWrap'); const v=$('#vastVideo');
+async function startVideoTask(){
+  if(!CFG.vastTag){tg.showPopup({title:t('config'),message:t('vast_not_set'),buttons:[{type:'ok'}]});return}
+  const s=await api('/api/task/start',{initData}); if(!s.ok){tg.showPopup({title:t('fail'),message:s.error||'unknown',buttons:[{type:'ok'}]});return}
+  const taskId=s.task_id; adDone=false; lastT=0; $('#fbNow').textContent='0';
   vastWrap.style.display='block';
-  v.innerHTML = '<source src="data:video/mp4;base64," type="video/mp4">';
-  if(FP && FP.destroy) try{FP.destroy()}catch(e){}
-  FP = fluidPlayer('vastVideo',{
-    layoutControls:{fillToContainer:true,allowDownload:false,playbackRateEnabled:false},
-    vastOptions:{adList:[{roll:'preRoll',vastTag:CFG.vastTag,skippable:true}],vpaidMode:'INSECURE',maxAllowedVastTagRedirects:5}
-  });
+  v.innerHTML='<source src="data:video/mp4;base64," type="video/mp4">';
+  if(FP&&FP.destroy) try{FP.destroy()}catch(_){}
+  FP=fluidPlayer('vastVideo',{layoutControls:{fillToContainer:true,allowDownload:false,playbackRateEnabled:false},
+    vastOptions:{adList:[{roll:'preRoll',vastTag:CFG.vastTag,skippable:true}],vpaidMode:'INSECURE',maxAllowedVastTagRedirects:5}});
   FP.on('adEnded', async ()=>{
     if(adDone) return; adDone=true;
-    const r = await api('/api/task/complete',{initData,task_id:taskId});
-    if(r.ok){ tg.showPopup({title:'Berhasil',message:`+${CFG.reward} USDT dikredit.`,buttons:[{type:'ok'}]}); loadConfig(); }
-    else{ tg.showPopup({title:'Gagal',message:r.error||'unknown',buttons:[{type:'ok'}]}); }
+    const r=await api('/api/task/complete',{initData,task_id:taskId});
+    if(r.ok){tg.showPopup({title:t('success'),message:t('credited',{AMOUNT:CFG.reward}),buttons:[{type:'ok'}]});loadConfig()}
+    else{tg.showPopup({title:t('fail'),message:r.error||'unknown',buttons:[{type:'ok'}]})}
   });
-  v.addEventListener('timeupdate', ()=>{
-    const dt = Math.max(0, v.currentTime - lastT); lastT = v.currentTime;
-    if(document.visibilityState==='visible' && !v.paused) fbTimer += dt;
-    $('#fbNow').textContent = String(Math.floor(fbTimer));
-    if(!adDone && fbTimer >= fbNeed){
+  v.addEventListener('timeupdate',()=>{
+    const dt=Math.max(0,v.currentTime-lastT); lastT=v.currentTime;
+    if(document.visibilityState==='visible'&&!v.paused) fbTimer+=dt;
+    $('#fbNow').textContent=String(Math.floor(fbTimer));
+    if(!adDone && fbTimer>=fbNeed){
       adDone=true;
       api('/api/task/complete',{initData,task_id:taskId}).then(r=>{
-        if(r.ok){ tg.showPopup({title:'Berhasil',message:`+${CFG.reward} USDT (fallback).`,buttons:[{type:'ok'}]}); loadConfig(); }
-      });
+        if(r.ok){tg.showPopup({title:t('success'),message:t('credited_fb',{AMOUNT:CFG.reward}),buttons:[{type:'ok'}]});loadConfig()}
+      })
     }
   });
-  try{ await v.play(); }catch(e){}
-});
-// juga tombol di halaman Tasks
-$('#taskVastBtn').addEventListener('click', ()=>btnStartVast.click());
-
-/* ---------- Monetag SDK tasks ---------- */
-async function runReward(kindLabel, showFn){
-  const s = await api('/api/task/start',{initData}); if(!s.ok){ tg.showPopup({title:'Gagal',message:s.error||'unknown',buttons:[{type:'ok'}]}); return }
-  const taskId = s.task_id;
-  try{
-    await showFn(); // resolve = selesai
-    const r = await api('/api/task/complete',{initData,task_id:taskId});
-    if(r.ok){ tg.showPopup({title:'Berhasil',message:`+${CFG.reward} USDT (${kindLabel}).`,buttons:[{type:'ok'}]}); loadConfig(); }
-  }catch(e){ tg.showPopup({title:'Iklan',message:'Iklan batal/gagal.',buttons:[{type:'ok'}]}); }
+  try{await v.play()}catch(_){}
 }
-$('#btnRewardInt').addEventListener('click', ()=> runReward('interstitial', ()=>show_9711117()));
-$('#btnRewardPop').addEventListener('click', ()=> runReward('popup', ()=>show_9711117('pop')));
-$('#taskIntBtn').addEventListener('click', ()=> $('#btnRewardInt').click());
-$('#taskPopBtn').addEventListener('click', ()=> $('#btnRewardPop').click());
+startTaskBtn.addEventListener('click',startVideoTask);
+$('#taskVastBtn').addEventListener('click',startVideoTask);
 
-let autoEnabled=false;
-$('#btnAutoInApp').addEventListener('click', ()=>{
-  if(autoEnabled) return;
-  autoEnabled=true;
+/* ----- Rewarded Popup / Interstitial ----- */
+async function runReward(kind,fn){
+  const s=await api('/api/task/start',{initData}); if(!s.ok){tg.showPopup({title:t('fail'),message:s.error||'unknown',buttons:[{type:'ok'}]});return}
+  const taskId=s.task_id;
   try{
-    show_9711117({type:'inApp',inAppSettings:{frequency:2,capping:0.1,interval:30,timeout:5,everyPage:false}});
-    $('#btnAutoInApp').textContent = 'In-App ON';
-    tg.HapticFeedback.notificationOccurred('success');
-  }catch(e){}
-});
+    await fn(); // selesai
+    const r=await api('/api/task/complete',{initData,task_id:taskId});
+    if(r.ok){tg.showPopup({title:t('success'),message:`+${CFG.reward} USDT`,buttons:[{type:'ok'}]});loadConfig()}
+  }catch(_){tg.showPopup({title:'Ad',message:t('ad_canceled'),buttons:[{type:'ok'}]})}
+}
+$('#taskPopBtn').addEventListener('click',()=>runReward('popup',()=>show_9711117('pop')));
+$('#taskIntBtn').addEventListener('click',()=>runReward('interstitial',()=>show_9711117()));
 
-/* ---------- Check-in ---------- */
-$('#btnCheckin').addEventListener('click', async ()=>{
-  const r = await api('/api/checkin',{initData});
+/* ----- Check-in ----- */
+$('#btnCheckin').addEventListener('click',async ()=>{
+  const r=await api('/api/checkin',{initData});
   if(r.ok){ $('#ciStatus').textContent = `+${r.amount} USDT • Streak ${r.streak} 🔥`; loadConfig(); }
-  else{ $('#ciStatus').textContent = r.error || 'Gagal'; }
+  else { $('#ciStatus').textContent = r.error || t('fail'); }
 });
 
-/* ---------- Wallet ---------- */
-$('#btnWithdraw').addEventListener('click', async ()=>{
-  const a = $('#wdAddr').value.trim();
-  const r = await api('/api/withdraw',{initData,address:a});
-  $('#wdMsg').textContent = r.ok ? `Request ${r.amount} USDT dibuat.` : (r.error||'Gagal');
+/* ----- Withdraw ----- */
+$('#btnWithdraw').addEventListener('click',async ()=>{
+  const a=$('#wdAddr').value.trim();
+  const r=await api('/api/withdraw',{initData,address:a});
+  $('#wdMsg').textContent=r.ok ? (LANG==='id'?'Permintaan dibuat.':'Request created.') : (r.error||t('fail'));
 });
 
-/* ---------- Profile ---------- */
-$('#btnRefresh').addEventListener('click', ()=>loadConfig());
+/* ----- Copy referral ----- */
+$('#btnCopyRef').addEventListener('click',()=>{
+  const el=$('#rfLink'); el.select(); document.execCommand('copy');
+  tg.HapticFeedback?.notificationOccurred('success');
+});
 
+/* Refresh profile */
+$('#btnRefresh').addEventListener('click',loadConfig);
 </script>
 </body>
 </html>
