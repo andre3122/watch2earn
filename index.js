@@ -223,42 +223,65 @@ app.post('/api/withdraw', (req, res) => {
   res.json({ ok:true, amount: amt })
 })
 
-// === Route postback Monetag ===
+// == Route postback Monetag ==
 app.get('/postback/monetag', (req, res) => {
-    const token = req.query.token;
-    if (token !== process.env.POSTBACK_TOKEN) {
-        return res.status(403).send('Forbidden');
+  const token = req.query.token;
+  if (token !== process.env.POSTBACK_TOKEN) {
+    return res.status(403).send('Forbidden');
+  }
+
+  const { reqid, telegram_id, estimated_price, is_paid } = req.query;
+  if (!reqid || !telegram_id) return res.status(400).send('Missing params');
+
+  try {
+    // Dedup: tolak kalau event sudah pernah masuk
+    const exists = db.prepare('SELECT 1 FROM postbacks WHERE reqid = ?').get(reqid);
+    if (exists) return res.status(200).send('Duplicate ignored');
+
+    // Simpan log postback
+    db.prepare(
+      'INSERT INTO postbacks (reqid, tg_id, is_paid, amount, raw) VALUES (?,?,?,?,?)'
+    ).run(
+      reqid,
+      Number(telegram_id),
+      Number(is_paid) === 1 ? 1 : 0,
+      Number(estimated_price) || 0,
+      JSON.stringify(req.query)
+    );
+
+    // Hanya kredit kalau event berbayar
+    if (Number(is_paid) === 1) {
+      db.prepare('UPDATE users SET balance = balance + ? WHERE tg_id = ?')
+        .run(Number(estimated_price) || 0, Number(telegram_id));
     }
 
-    const { reqid, telegram_id, estimated_price, is_paid } = req.query;
-
-    if (!reqid || !telegram_id) return res.status(400).send('Missing params');
-
-    try {
-        // Cek duplicate postback
-        const exists = db.prepare('SELECT 1 FROM postbacks WHERE reqid = ?').get(reqid);
-        if (exists) return res.status(200).send('Duplicate ignored');
-
-        // Simpan log
-        db.prepare('INSERT INTO postbacks (reqid, tg_id, is_paid, amount, raw) VALUES (?,?,?,?,?)')
-            .run(reqid, telegram_id, is_paid ? 1 : 0, estimated_price || 0, JSON.stringify(req.query));
-
-        // Kalau event berbayar → kredit saldo user
-        if (parseInt(is_paid) === 1) {
-            db.prepare('UPDATE users SET balance = balance + ? WHERE tg_id = ?')
-                .run(estimated_price || 0, telegram_id);
-        }
-
-        res.status(200).send('OK');
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Error');
-    }
+    res.status(200).send('OK');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error');
+  }
 });
 
-// === Withdraw ===
+// == Withdraw ==
 app.post('/api/withdraw', (req, res) => {
-    ...
+  const { initData, address } = req.body || {};
+  const u = verifyInitData(initData);
+  if (!u) return res.status(403).json({ ok: false, error: 'bad initData' });
+
+  const me = getOrCreateUserFromTG(u, null);
+  const row = db.prepare('SELECT * FROM users WHERE tg_id = ?').get(me.tg_id);
+
+  if (row.balance < MIN_WITHDRAW) {
+    return res.status(400).json({ ok: false, error: 'min withdraw not met', balance: row.balance });
+  }
+
+  const amt = row.balance;
+  debit(me.tg_id, amt, { reason: 'withdraw_request' });
+  db.prepare('INSERT INTO withdrawals (tg_id, amount, address, status) VALUES (?,?,?,?)')
+    .run(me.tg_id, amt, address, 'pending');
+
+  res.json({ ok: true, amount: amt });
 });
 
-app.listen(PORT, () => console.log('Server on', PORT))
+app.listen(PORT, () => console.log('Server on', PORT));
+
