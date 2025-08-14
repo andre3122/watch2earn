@@ -272,7 +272,7 @@
   document.getElementById('minWdTxt').textContent = MIN_WITHDRAW;
   document.getElementById('minWdHint').textContent = MIN_WITHDRAW;
 
-  // Check-in amounts (7 days)
+  // ===== Check-in =====
   const dayRewards = [0.02,0.04,0.06,0.08,0.10,0.12,0.15];
   const dayGrid = document.getElementById('dayGrid');
   function buildDays(){
@@ -286,7 +286,6 @@
   }
   buildDays();
 
-  // Claim button logic
   const btnClaim = document.getElementById('btnClaim');
   const bar = document.getElementById('bar');
   const claimAmt = document.getElementById('claimAmt');
@@ -300,7 +299,6 @@
     const progress = Math.min(state.streak/7,1)*100;
     bar.style.width = progress + '%';
     claimAmt.textContent = '+' + dayRewards[(state.streak)%7].toFixed(2);
-    // paint done/next
     [...dayGrid.children].forEach((el,i)=>{
       el.classList.remove('done'); el.classList.add('lock');
       if(i < state.streak) el.classList.add('done');
@@ -315,71 +313,114 @@
     const amt = dayRewards[(state.streak)%7];
     state.balance += amt;
     state.totalEarned += amt;
-    state.streak = Math.min(state.streak+1, 7); // simple 7-day loop
+    state.streak = Math.min(state.streak+1, 7);
     state.lastCheck = t;
     save();
     toast(`+${amt.toFixed(2)} USDT added`);
   });
 
-  // === Ads: Stream (pre-roll) ===
+  // ===== Ads: Stream (VAST/FluidPlayer) + robust fallbacks =====
   const playerWrap = document.getElementById('playerWrap');
   const v = document.getElementById('player');
   const btnStartStream = document.getElementById('btnStartStream');
   document.getElementById('fallbackNeed').textContent = FALLBACK_SEC;
-  let fp=null, fallbackTimer=null, watched=0, lastT=0, rewarded=false;
 
-  function creditTask(){
+  let fp=null, fallbackTimer=null, watchdog=null, watched=0, lastT=0, rewarded=false;
+
+  function showRewardPopup(amount=REWARD_PER_TASK, via=''){
+    const msg = `+${amount.toFixed(2)} USDT credited${via?` (${via})`:''}.`;
+    if(tg?.showPopup){ tg.showPopup({title:'Reward',message:msg,buttons:[{type:'ok'}]}); }
+    else alert(msg);
+  }
+  function creditTask(via=''){
     if(rewarded) return;
     rewarded = true;
+    clearInterval(fallbackTimer); clearTimeout(watchdog);
+    try{ fp && fp.destroy && fp.destroy(); }catch(e){}
     state.balance += REWARD_PER_TASK;
     state.totalEarned += REWARD_PER_TASK;
     state.tasksDone += 1;
     save();
-    toast(`Task complete: +${REWARD_PER_TASK.toFixed(2)} USDT`);
+    showRewardPopup(REWARD_PER_TASK, via);
   }
 
   btnStartStream.addEventListener('click', async ()=>{
     rewarded=false; watched=0; lastT=0;
     playerWrap.classList.remove('hidden');
     v.innerHTML = '<source src="data:video/mp4;base64," type="video/mp4">';
+
+    // Safety: if ad events gagal, tetap kredit setelah 45s
+    clearTimeout(watchdog);
+    watchdog = setTimeout(()=>creditTask('watchdog'), 45000);
+
     try{ fp && fp.destroy && fp.destroy(); }catch(e){}
     if(VAST_TAG){
       fp = fluidPlayer('player', {
         layoutControls:{fillToContainer:true, allowDownload:false, playbackRateEnabled:false},
-        vastOptions:{ adList:[{roll:'preRoll', vastTag: VAST_TAG, skippable:true}], vpaidMode:'INSECURE'}
+        vastOptions:{ adList:[{roll:'preRoll', vastTag: VAST_TAG, skippable:true}], vpaidMode:'INSECURE', maxAllowedVastTagRedirects:5 }
       });
-      fp.on('adEnded', creditTask);
+      // Kredit jika iklan benar2 berakhir
+      fp.on('adEnded', ()=> creditTask('vast-end'));
+      // Kalau ada error/skip, kita tetap pakai fallback waktu tonton
+      fp.on('adError', ()=> {/* keep fallback ticking */});
+      fp.on('adSkipped', ()=> {/* keep fallback ticking */});
     }
-    // Fallback timer — credits after FALLBACK_SEC of foreground playback
+
+    // Fallback timer — kredit setelah FALLBACK_SEC detik waktu play foreground
     clearInterval(fallbackTimer);
     fallbackTimer = setInterval(()=>{
       if(!v.paused && document.visibilityState==='visible'){
         watched++;
-        if(watched>=FALLBACK_SEC){ clearInterval(fallbackTimer); creditTask(); }
+        if(watched>=FALLBACK_SEC){ clearInterval(fallbackTimer); creditTask('fallback'); }
       }
     },1000);
-    try{ await v.play(); }catch(e){}
+
+    try{ await v.play(); }catch(e){ /* user perlu tap play manual */ }
   });
 
-  // === Ads: Monetag SDK buttons ===
+  // ===== Ads: Monetag SDK buttons — tambah guard jika Promise tidak resolve =====
   const g = (name)=>window[name];
-  document.getElementById('btnRewPopup').onclick = ()=> g('show_9711117')('pop').then(creditTask).catch(()=>{});
-  document.getElementById('btnRewInter').onclick = ()=> g('show_9711117')().then(creditTask).catch(()=>{});
-  document.getElementById('btnInApp').onclick   = ()=> g('show_9711117')({type:'inApp',inAppSettings:{frequency:2,capping:0.1,interval:30,timeout:5,everyPage:false}}).then(creditTask).catch(()=>{});
 
-  // === Withdraw (local demo only) ===
+  async function runMonetagAndCredit(runFn, label){
+    rewarded=false;
+    // Guard timeout (misal ad selesai tapi Promise tidak resolve)
+    let guard = setTimeout(()=>creditTask(`${label}-guard`), 45000);
+    try{
+      await runFn();
+      creditTask(label);
+    }catch(e){
+      // biarkan guard yang menangani jika perlu
+    }finally{
+      clearTimeout(guard);
+    }
+  }
+
+  document.getElementById('btnRewPopup').onclick = ()=> {
+    const fn = ()=> g('show_9711117')('pop');
+    return runMonetagAndCredit(fn, 'popup');
+  };
+  document.getElementById('btnRewInter').onclick = ()=> {
+    const fn = ()=> g('show_9711117')();
+    return runMonetagAndCredit(fn, 'interstitial');
+  };
+  document.getElementById('btnInApp').onclick   = ()=> {
+    const fn = ()=> g('show_9711117')({type:'inApp',inAppSettings:{frequency:1,capping:0.1,interval:20,timeout:5,everyPage:false}});
+    return runMonetagAndCredit(fn, 'inapp');
+  };
+
+  // ===== Withdraw (demo local) =====
   document.getElementById('btnWithdraw').addEventListener('click',()=>{
     const amt = parseFloat((document.getElementById('wdAmt').value||'0').replace(',','.'));
     const addr = document.getElementById('wdAddr').value.trim();
     if(!amt || amt<MIN_WITHDRAW) return toast(`Minimum withdraw is ${MIN_WITHDRAW} USDT`, true);
     if(amt>state.balance) return toast(`Insufficient balance`, true);
     if(addr.length<10) return toast(`Enter a valid wallet address`, true);
-    state.balance -= amt; // hold
+    state.balance -= amt;
     save();
     toast(`Withdrawal requested: ${amt.toFixed(2)} USDT to ${addr}`);
   });
 
-  // === Tabs ===
+  // ===== Tabs =====
   const screens = {
     home: document.getElementById('screen-home'),
     ads: document.getElementById('screen-ads'),
@@ -401,9 +442,7 @@
   // Copy helpers
   document.getElementById('copyRef').onclick = ()=>copy(refUrl);
   document.getElementById('copyRef2').onclick= ()=>copy(refUrl);
-  function copy(txt){
-    navigator.clipboard.writeText(txt).then(()=>toast('Copied'));
-  }
+  function copy(txt){ navigator.clipboard.writeText(txt).then(()=>toast('Copied')); }
 
   // Toast via Telegram popup when available
   function toast(msg, isErr=false){
@@ -423,5 +462,3 @@
   syncUI();
 })();
 </script>
-</body>
-</html>
