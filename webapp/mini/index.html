@@ -86,15 +86,13 @@
 
   /* Profile header (username + balance pill, tanpa "Joined …") */
   .profileHead{display:flex;align-items:center;gap:14px}
-  .avatar{width:56px;height:56px;border-radius:50%;background:#eee;overflow:hidden;flex:0 0 56px}
+  .avatar{width:56px;height:56px;border-radius:50%;background:#eef2f7;overflow:hidden;
+          display:flex;align-items:center;justify-content:center;color:#22324d;font-weight:900}
+  .avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:none}
+  .avatar-initial{font-size:22px}
   .uname{font-weight:900;font-size:22px}
   .ubio{color:var(--muted);margin-top:2px}
   .pillRight{margin-left:auto}
-  .avatar{width:56px;height:56px;border-radius:50%;background:#eef2f7;overflow:hidden;
-        display:flex;align-items:center;justify-content:center;color:#22324d;font-weight:900}
-  .avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:none}
-  .avatar.badge{background:linear-gradient(135deg,#e0f2ff,#e8e7ff)}
-  
 
   /* avoid flash before init */
   html{visibility:hidden}
@@ -214,16 +212,15 @@
 
   <!-- PROFILE -->
   <section id="screen-profile" class="hidden">
-    <!-- Profile header (tanpa “Joined …”, hanya username + pill balance) -->
+    <!-- Profile header: hanya username + pill balance -->
     <div class="card">
       <div class="profileHead">
         <div class="avatar">
-  <img id="avatarImg" alt="" loading="lazy">
-          <!-- optional: isi <img src="..." style="width:100%;height:100%;object-fit:cover"> -->
+          <img id="avatarImg" alt="" loading="lazy">
         </div>
         <div>
           <div class="uname" id="profName">User</div>
-          <div class="ubio" id="joinedDate" style="display:none"></div> <!-- disembunyikan -->
+          <div class="ubio" id="joinedDate" style="display:none"></div>
         </div>
         <div class="chipBal pillRight"><span id="balProf">0.00</span> USDT</div>
       </div>
@@ -310,27 +307,26 @@
   el('userChip').textContent = uname;
   el('joinedTxt').textContent = `Joined ${state.join}`;
   el('profName').textContent = uname;
-  // === Avatar: foto jika ada, fallback ke inisial ===
-const avImg  = document.getElementById('avatarImg');     // <img> di kartu profile
-const avWrap = document.getElementById('avatarWrap');    // wrapper lingkaran
-const photoUrl = tg?.initDataUnsafe?.user?.photo_url;
 
-function showInitial() {
-  if (!avWrap) return;
-  // bikin badge inisial kalau img gagal / kosong
-  avWrap.classList.add('avatar-initial');
-  avWrap.textContent = (uname?.[0] || 'U').toUpperCase();
-}
+  // === Avatar: foto kalau ada, fallback inisial ===
+  const avImg  = document.getElementById('avatarImg');                 // <img> di kartu profile
+  const avWrap = document.querySelector('.profileHead .avatar');       // wrapper lingkaran
+  const photoUrl = tg?.initDataUnsafe?.user?.photo_url;
 
-if (photoUrl && avImg) {
-  avImg.src = photoUrl;
-  avImg.onload  = () => { avImg.style.display = 'block'; };
-  avImg.onerror = showInitial;
-} else {
-  showInitial();
-}
-  
-  // joinedDate disembunyikan sesuai permintaan:
+  function showInitial(){
+    if (!avWrap) return;
+    avWrap.classList.add('avatar-initial');
+    avWrap.textContent = (uname?.[0] || 'U').toUpperCase();
+  }
+  if (photoUrl && avImg){
+    avImg.src = photoUrl;
+    avImg.onload  = () => { avImg.style.display = 'block'; };
+    avImg.onerror = showInitial;
+  } else {
+    showInitial();
+  }
+
+  // sembunyikan joinedDate sesuai request
   const jd = el('joinedDate'); if (jd) jd.style.display = 'none';
 
   // referral link
@@ -478,11 +474,11 @@ if (photoUrl && avImg) {
 
   /** ===== Sync UI ===== */
   function syncUI(){
-    if (el('balTop'))   el('balTop').textContent   = state.balance.toFixed(2);
-    if (el('balProf'))  el('balProf').textContent  = state.balance.toFixed(2);
-    if (el('totalEarn'))el('totalEarn').textContent= state.totalEarned.toFixed(2)+' USDT';
-    if (el('tasksDone'))el('tasksDone').textContent= state.tasksDone;
-    if (el('streakChip')) el('streakChip').textContent = state.streak + ' 🔥';
+    if (el('balTop'))    el('balTop').textContent    = state.balance.toFixed(2);
+    if (el('balProf'))   el('balProf').textContent   = state.balance.toFixed(2);
+    if (el('totalEarn')) el('totalEarn').textContent = state.totalEarned.toFixed(2)+' USDT';
+    if (el('tasksDone')) el('tasksDone').textContent = state.tasksDone;
+    if (el('streakChip'))el('streakChip').textContent= state.streak+' 🔥';
     updateCheckinUI();
   }
   syncUI();
@@ -490,3 +486,4 @@ if (photoUrl && avImg) {
 </script>
 </body>
 </html>
+
