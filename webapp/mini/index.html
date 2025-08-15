@@ -7,7 +7,7 @@
 
 <link rel="preconnect" href="https://cdn.fluidplayer.com" crossorigin>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script defer src="https://cdn/fluidplayer.com/v3/current/fluidplayer.min.js"></script>
+<script defer src="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js"></script>
 
 <!-- Monetag Mini App SDK (ganti data-zone sesuai akunmu) -->
 <script src="//libtl.com/sdk.js" data-zone="9711117" data-sdk="show_9711117"></script>
@@ -30,7 +30,7 @@
   .logo{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#7ee8fa,#eec0c6)}
   .title{font-weight:800;font-size:20px}
 
-  /* Pills (lembut & transparan) */
+  /* Pills — lembut & transparan */
   .chip{margin-left:auto;border-radius:999px;padding:6px 12px;font-weight:700;
         background:rgba(11,18,32,.08);color:var(--pill-ink);border:1px solid var(--line);box-shadow:none}
   .chip small{opacity:.7;margin-left:6px}
@@ -57,7 +57,7 @@
 
   .stack{display:flex;flex-direction:column;gap:10px}
 
-  /* Check-in card (colorful) */
+  /* Check-in card */
   .checkin{background:linear-gradient(135deg,#8fd3f4,#c793ff 40%,#f8ae55);color:#0b1220}
   .daygrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:10px 0 12px}
   .day{background:rgba(255,255,255,.22);backdrop-filter:blur(2px);border:2px solid rgba(255,255,255,.5);
@@ -69,21 +69,18 @@
 
   video{width:100%;border-radius:12px;border:1px solid var(--line);background:#000}
 
-  /* Tabs */
-  .tabs{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.7);backdrop-filter:blur(8px);
-        border-top:1px solid var(--line);padding:10px}
-  .tabbar{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:920px;margin:0 auto}
-  .tab{border-radius:16px;background:var(--pill-bg);color:var(--pill-ink);text-align:center;padding:12px 10px;font-weight:800}
-  .tab.active{outline:2px solid #d2e6ff;background:#f5f9ff}
-  .tab small{display:block;color:var(--muted);font-weight:600}
-
-  .row{display:flex;align-items:center;gap:10px}
-  .between{display:flex;align-items:center;justify-content:space-between;gap:10px}
-
-  .field{width:100%;background:#f5f7fb;border:1px solid var(--line);border-radius:12px;padding:14px;color:var(--ink)}
-  .hint{font-size:13px;color:var(--muted);margin-top:6px}
-  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
-  .hidden{display:none}
+  /* === NEW BOTTOM BAR (icon + label) === */
+  .tabs{position:fixed;left:0;right:0;bottom:0;border-top:1px solid var(--line);background:#fff}
+  .bottombar{display:grid;grid-template-columns:repeat(4,1fr);max-width:920px;margin:0 auto}
+  .btab{
+    appearance:none;background:transparent;border:0;outline:0;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:6px;padding:10px 6px;font-weight:700;color:#384860;
+  }
+  .btab .ico{width:22px;height:22px;display:inline-block}
+  .btab .lbl{font-weight:700;font-size:13px}
+  .btab.active{background:#f2f6ff}
+  .btab:active{opacity:.9}
 
   /* Profile */
   .profileHead{display:flex;align-items:center;gap:14px}
@@ -99,7 +96,7 @@
   html{visibility:hidden}
   html.init-ready{visibility:visible}
 
-  /* HIDE yang kamu minta di Home */
+  /* Hide yang kamu minta di Home */
   #joinedTxt { display: none !important; }
   #screen-home > .grid.g2:first-of-type { display: none !important; }
 </style>
@@ -169,9 +166,7 @@
 
   <!-- ADS -->
   <section id="screen-ads" class="hidden">
-    <!-- (Dihapus: kartu "Ads Task") -->
-
-    <!-- Follow Telegram Task -->
+    <!-- Ads Task card DIHAPUS -->
     <div class="card" style="margin-top:12px">
       <div class="between">
         <div class="title">Follow Telegram</div>
@@ -185,7 +180,6 @@
       <div class="hint" id="followStat" style="margin-top:8px"></div>
     </div>
 
-    <!-- Completed Tasks -->
     <div class="card">
       <h3>Completed Tasks</h3>
       <div class="stack" style="margin-top:8px">
@@ -243,20 +237,41 @@
   </section>
 </div>
 
-<!-- Tabs -->
+<!-- Bottom bar (ikon + label) -->
 <div class="tabs">
-  <div class="tabbar">
-    <button class="tab active" data-tab="home">Home</button>
-    <button class="tab" data-tab="ads">Ads</button>
-    <button class="tab" data-tab="refer">Refer</button>
-    <button class="tab" data-tab="profile">Profile</button>
-  </div>
+  <nav class="bottombar">
+    <button class="btab active" data-tab="home" aria-label="Home">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10"/>
+      </svg>
+      <span class="lbl">Home</span>
+    </button>
+    <button class="btab" data-tab="ads" aria-label="Ads Task">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="4" width="18" height="12" rx="2"/><path d="M7 20h10"/><path d="M8 10h8"/><path d="M8 8h5"/>
+      </svg>
+      <span class="lbl">Ads Task</span>
+    </button>
+    <button class="btab" data-tab="refer" aria-label="Refer">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+      <span class="lbl">Refer</span>
+    </button>
+    <button class="btab" data-tab="profile" aria-label="Profile">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 21a8 8 0 1 0-16 0"/><circle cx="12" cy="7" r="4"/>
+      </svg>
+      <span class="lbl">Profile</span>
+    </button>
+  </nav>
 </div>
 
 <script>
 (function () {
-  const tg = window.Telegram?.WebApp;
-  tg && tg.expand();
+  const tg = window.Telegram?.WebApp; tg && tg.expand();
 
   /* CONFIG */
   const BOT_USERNAME='watch2earnreal_bot';
@@ -277,10 +292,10 @@
   /* Identity & header */
   const uname=tg?.initDataUnsafe?.user?.username || tg?.initDataUnsafe?.user?.first_name || 'User';
   el('userChip').textContent=uname;
-  if(el('joinedTxt')) el('joinedTxt').textContent=`Joined ${state.join}`;
+  const jt=document.getElementById('joinedTxt'); if(jt) jt.textContent=`Joined ${state.join}`;
   el('profName').textContent=uname;
 
-  /* Avatar (foto jika ada, fallback inisial) */
+  /* Avatar */
   const avImg=document.getElementById('avatarImg');
   const avWrap=document.querySelector('.profileHead .avatar');
   const photoUrl=tg?.initDataUnsafe?.user?.photo_url || tg?.initData?.user?.photo_url || '';
@@ -296,11 +311,13 @@
 
   /* Referral */
   const refUrl=`https://t.me/${BOT_USERNAME}?start=${UID}`;
-  if(el('refLink')) el('refLink').value=refUrl;
-  if(el('refLink2')) el('refLink2').value=refUrl;
-  if(el('refPct')) el('refPct').textContent=`Earn ${REF_BONUS_PCT}% of your friends’ earnings.`;
-  if(el('copyRef')) el('copyRef').onclick=()=>navigator.clipboard.writeText(refUrl).then(()=>toast('Copied'));
-  if(el('copyRef2')) el('copyRef2').onclick=()=>navigator.clipboard.writeText(refUrl).then(()=>toast('Copied'));
+  const refLink=el('refLink'), refLink2=el('refLink2');
+  if(refLink) refLink.value=refUrl;
+  if(refLink2) refLink2.value=refUrl;
+  const refPct=el('refPct'); if(refPct) refPct.textContent=`Earn ${REF_BONUS_PCT}% of your friends’ earnings.`;
+  const copyRef=el('copyRef'), copyRef2=el('copyRef2');
+  if(copyRef) copyRef.onclick=()=>navigator.clipboard.writeText(refUrl).then(()=>toast('Copied'));
+  if(copyRef2) copyRef2.onclick=()=>navigator.clipboard.writeText(refUrl).then(()=>toast('Copied'));
 
   /* Check-in */
   const dayRewards=[0.02,0.04,0.06,0.08,0.10,0.12,0.15];
@@ -358,29 +375,31 @@
   /* Withdraw (demo local) */
   const btnWithdraw=el('btnWithdraw'); if(btnWithdraw) btnWithdraw.addEventListener('click',()=>{
     const amt=parseFloat((el('wdAmt')?.value||'0').replace(',','.')); const addr=(el('wdAddr')?.value||'').trim();
-    if(!amt||amt<MIN_WITHDRAW) return toast(`Minimum withdraw is ${MIN_WITHDRAW} USDT`,true);
+    if(!amt||amt<1) return toast(`Minimum withdraw is 1 USDT`,true);
     if(amt>state.balance) return toast(`Insufficient balance`,true);
     if(addr.length<10) return toast(`Enter a valid wallet address`,true);
     state.balance-=amt; save(); toast(`Withdrawal requested: ${amt.toFixed(2)} USDT to ${addr}`);
   });
 
-  /* Tabs */
+  /* Tabs (pakai .btab) */
   const screens={home:el('screen-home'),ads:el('screen-ads'),refer:el('screen-refer'),profile:el('screen-profile')};
-  document.querySelectorAll('.tab').forEach(b=>{
-    b.addEventListener('click',()=>{
-      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.btab').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      document.querySelectorAll('.btab').forEach(t=>t.classList.remove('active'));
       b.classList.add('active');
-      const k=b.dataset.tab; Object.entries(screens).forEach(([key,sec])=>{ if(sec) sec.classList.toggle('hidden', key!==k); });
+      const k=b.dataset.tab;
+      Object.entries(screens).forEach(([key,sec])=>{ if (sec) sec.classList.toggle('hidden', key!==k); });
       window.scrollTo({top:0,behavior:'instant'});
     });
   });
 
   function syncUI(){
-    if(el('balTop')) el('balTop').textContent=state.balance.toFixed(2);
-    if(el('balProf')) el('balProf').textContent=state.balance.toFixed(2);
-    if(el('totalEarn')) el('totalEarn').textContent=state.totalEarned.toFixed(2)+' USDT';
-    if(el('tasksDone')) el('tasksDone').textContent=state.tasksDone;
-    if(el('streakChip')) el('streakChip').textContent=state.streak+' 🔥';
+    const balTop=el('balTop'), balProf=el('balProf'), totalEarn=el('totalEarn'), tasksDone=el('tasksDone'), streakChip=el('streakChip');
+    if(balTop) balTop.textContent=state.balance.toFixed(2);
+    if(balProf) balProf.textContent=state.balance.toFixed(2);
+    if(totalEarn) totalEarn.textContent=state.totalEarned.toFixed(2)+' USDT';
+    if(tasksDone) tasksDone.textContent=state.tasksDone;
+    if(streakChip) streakChip.textContent=state.streak+' 🔥';
     updateCheckinUI();
   }
   syncUI();
@@ -388,4 +407,3 @@
 </script>
 </body>
 </html>
-
