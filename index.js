@@ -16,6 +16,11 @@ const REF_BONUS_PCT = parseFloat(process.env.REF_BONUS_PCT || '10')
 const VAST_TAG = process.env.VAST_TAG || ''                // Monetag VAST tag
 const POSTBACK_TOKEN = process.env.POSTBACK_TOKEN || ''    // untuk /postback/monetag
 
+// === Follow-task config ===
+const CHANNEL_ID = process.env.CHANNEL_ID ? parseInt(process.env.CHANNEL_ID, 10) : null // contoh: -1001234567890
+const CHANNEL_USERNAME = process.env.CHANNEL_USERNAME || '' // contoh: 'watch2earn_channel' (tanpa @)
+const FOLLOW_REWARD = parseFloat(process.env.FOLLOW_REWARD || '0.01')
+
 const nanoid = customAlphabet('23456789ABCDEFGHJKLMNPQRSTUVWXYZ', 8)
 
 // ==== Utils ====
@@ -122,38 +127,36 @@ function debit(tg_id, amount, meta = {}) {
   db.prepare('INSERT INTO transactions (tg_id, type, amount, meta) VALUES (?,?,?,?)')
     .run(tg_id, 'debit', amount, JSON.stringify(meta))
 }
-async function isMemberOfChannel(tgId) {
-  const chatId = CHANNEL_ID || (CHANNEL_USERNAME ? '@' + CHANNEL_USERNAME : null);
-  if (!chatId) throw new Error('Channel config not set');
-
-  const gm = await bot.telegram.getChatMember(chatId, tgId);
-  const s = gm?.status;
-  // status yang dianggap sudah join
-  return ['member', 'administrator', 'creator', 'restricted'].includes(s);
-}
 
 // ==== Bot ====
 const bot = new Telegraf(BOT_TOKEN)
 
+// helper: cek membership channel
+async function isMemberOfChannel(tgId) {
+  const chatId = CHANNEL_ID || (CHANNEL_USERNAME ? '@' + CHANNEL_USERNAME : null)
+  if (!chatId) throw new Error('Channel config not set')
+  const gm = await bot.telegram.getChatMember(chatId, tgId)
+  const s = gm?.status
+  return ['member', 'administrator', 'creator', 'restricted'].includes(s)
+}
+
 bot.start(async (ctx) => {
-  const payload = ctx.startPayload;
-  let refBy = null;
+  const payload = ctx.startPayload
+  let refBy = null
 
   if (payload && payload.length >= 5) {
-    const exists = db.prepare('SELECT ref_code FROM users WHERE ref_code = ?').get(payload);
-    if (exists) refBy = payload;
+    const exists = db.prepare('SELECT ref_code FROM users WHERE ref_code = ?').get(payload)
+    if (exists) refBy = payload
   }
 
-  const me = getOrCreateUserFromTG(ctx.from, refBy);
-  const webAppUrl = `${BASE_URL}/webapp/mini/index.html`;
+  getOrCreateUserFromTG(ctx.from, refBy)
+  const webAppUrl = `${BASE_URL}/webapp/mini/index.html`
 
   await ctx.reply(
     'Selamat datang! Buka Mini App untuk mulai.',
-    Markup.inlineKeyboard([
-      Markup.button.webApp('Open Mini App ▶️', webAppUrl)
-    ])
-  );
-});
+    Markup.inlineKeyboard([ Markup.button.webApp('Open Mini App ▶️', webAppUrl) ])
+  )
+})
 
 bot.command('ref', async (ctx) => {
   const me = getOrCreateUserFromTG(ctx.from)
@@ -290,7 +293,7 @@ app.get('/postback/monetag', (req, res) => {
       credit(tgId, creditAmount, 's2s_postback', { source: 'monetag', reqid })
       db.prepare('UPDATE users SET total_tasks = total_tasks + 1 WHERE tg_id=?').run(tgId)
 
-      // referral bonus (opsional: sama seperti di /api/task/complete)
+      // referral bonus
       if (me?.referred_by) {
         const inviter = db.prepare('SELECT * FROM users WHERE ref_code=?').get(me.referred_by)
         if (inviter) {
@@ -309,51 +312,51 @@ app.get('/postback/monetag', (req, res) => {
     console.error('postback error', e)
     return res.status(500).send('Error')
   }
+}) // <— penutup ROUTE postback
+
 // === Follow Telegram: one-time claim ===
 app.post('/api/follow/claim', async (req, res) => {
   try {
-    const { initData } = req.body || {};
-    const u = verifyInitData(initData);
-    if (!u) return res.status(403).json({ ok:false, error:'bad initData' });
+    const { initData } = req.body || {}
+    const u = verifyInitData(initData)
+    if (!u) return res.status(403).json({ ok:false, error:'bad initData' })
 
-    const me = getOrCreateUserFromTG(u, null);
+    const me = getOrCreateUserFromTG(u, null)
 
     // sudah pernah klaim?
     const existed = db.prepare(
       "SELECT 1 FROM tasks WHERE tg_id=? AND task_id=? AND status='completed'"
-    ).get(me.tg_id, 'follow_tg');
-    if (existed) return res.json({ ok:true, balance_delta: 0 });
+    ).get(me.tg_id, 'follow_tg')
+    if (existed) return res.json({ ok:true, balance_delta: 0 })
 
     // validasi config channel
     if (!CHANNEL_ID && !CHANNEL_USERNAME) {
-      return res.status(400).json({ ok:false, error:'Follow task not configured (channel missing)' });
+      return res.status(400).json({ ok:false, error:'Follow task not configured (channel missing)' })
     }
 
     // cek membership
-    let joined = false;
+    let joined = false
     try {
-      joined = await isMemberOfChannel(me.tg_id);
+      joined = await isMemberOfChannel(me.tg_id)
     } catch (e) {
-      console.error('getChatMember error', e);
-      return res.status(400).json({ ok:false, error:'Bot must be in channel (prefer admin) to verify membership' });
+      console.error('getChatMember error', e)
+      return res.status(400).json({ ok:false, error:'Bot must be in channel (prefer admin) to verify membership' })
     }
-    if (!joined) return res.status(400).json({ ok:false, error:'Please join the channel first' });
+    if (!joined) return res.status(400).json({ ok:false, error:'Please join the channel first' })
 
-    // kredit & catat task (dedup)
-    credit(me.tg_id, FOLLOW_REWARD, 'follow_reward', { task_id:'follow_tg' });
+    // kredit & catat task
+    credit(me.tg_id, FOLLOW_REWARD, 'follow_reward', { task_id:'follow_tg' })
     db.prepare('INSERT INTO tasks (tg_id, task_id, amount, status) VALUES (?,?,?,?)')
-      .run(me.tg_id, 'follow_tg', FOLLOW_REWARD, 'completed');
+      .run(me.tg_id, 'follow_tg', FOLLOW_REWARD, 'completed')
+    db.prepare('UPDATE users SET total_tasks = total_tasks + 1 WHERE tg_id=?').run(me.tg_id)
 
-    // naikkan total_tasks juga (biar konsisten)
-    db.prepare('UPDATE users SET total_tasks = total_tasks + 1 WHERE tg_id=?').run(me.tg_id);
-
-    return res.json({ ok:true, balance_delta: FOLLOW_REWARD });
-    } catch (err) {
-    console.error('follow/claim error', err);
-    return res.status(500).json({ ok:false, error:'server error' });
+    return res.json({ ok:true, balance_delta: FOLLOW_REWARD })
+  } catch (err) {
+    console.error('follow/claim error', err)
+    return res.status(500).json({ ok:false, error:'server error' })
   }
-}); // penutup route follow/claim
+})
 
 // Start server
-app.listen(PORT, () => console.log('Server on', PORT));
+app.listen(PORT, () => console.log('Server on', PORT))
   
