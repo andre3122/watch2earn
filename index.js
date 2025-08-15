@@ -122,6 +122,15 @@ function debit(tg_id, amount, meta = {}) {
   db.prepare('INSERT INTO transactions (tg_id, type, amount, meta) VALUES (?,?,?,?)')
     .run(tg_id, 'debit', amount, JSON.stringify(meta))
 }
+async function isMemberOfChannel(tgId) {
+  const chatId = CHANNEL_ID || (CHANNEL_USERNAME ? '@' + CHANNEL_USERNAME : null);
+  if (!chatId) throw new Error('Channel config not set');
+
+  const gm = await bot.telegram.getChatMember(chatId, tgId);
+  const s = gm?.status;
+  // status yang dianggap sudah join
+  return ['member', 'administrator', 'creator', 'restricted'].includes(s);
+}
 
 // ==== Bot ====
 const bot = new Telegraf(BOT_TOKEN)
@@ -300,7 +309,51 @@ app.get('/postback/monetag', (req, res) => {
     console.error('postback error', e)
     return res.status(500).send('Error')
   }
-})
+// === Follow Telegram: one-time claim ===
+app.post('/api/follow/claim', async (req, res) => {
+  try {
+    const { initData } = req.body || {};
+    const u = verifyInitData(initData);
+    if (!u) return res.status(403).json({ ok:false, error:'bad initData' });
+
+    const me = getOrCreateUserFromTG(u, null);
+
+    // sudah pernah klaim?
+    const existed = db.prepare(
+      "SELECT 1 FROM tasks WHERE tg_id=? AND task_id=? AND status='completed'"
+    ).get(me.tg_id, 'follow_tg');
+    if (existed) return res.json({ ok:true, balance_delta: 0 });
+
+    // validasi config channel
+    if (!CHANNEL_ID && !CHANNEL_USERNAME) {
+      return res.status(400).json({ ok:false, error:'Follow task not configured (channel missing)' });
+    }
+
+    // cek membership
+    let joined = false;
+    try {
+      joined = await isMemberOfChannel(me.tg_id);
+    } catch (e) {
+      console.error('getChatMember error', e);
+      return res.status(400).json({ ok:false, error:'Bot must be in channel (prefer admin) to verify membership' });
+    }
+    if (!joined) return res.status(400).json({ ok:false, error:'Please join the channel first' });
+
+    // kredit & catat task (dedup)
+    credit(me.tg_id, FOLLOW_REWARD, 'follow_reward', { task_id:'follow_tg' });
+    db.prepare('INSERT INTO tasks (tg_id, task_id, amount, status) VALUES (?,?,?,?)')
+      .run(me.tg_id, 'follow_tg', FOLLOW_REWARD, 'completed');
+
+    // naikkan total_tasks juga (biar konsisten)
+    db.prepare('UPDATE users SET total_tasks = total_tasks + 1 WHERE tg_id=?').run(me.tg_id);
+
+    return res.json({ ok:true, balance_delta: FOLLOW_REWARD });
+  } catch (err) {
+    console.error('follow/claim error', err);
+    return res.status(500).json({ ok:false, error:'server error' });
+  }
+});
+  
 
 app.listen(PORT, () => console.log('Server on', PORT))
                                   
