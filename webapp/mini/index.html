@@ -85,6 +85,20 @@ html.init-ready{visibility:visible}
 </style>
 </head>
 <body>
+<script>
+  // Tambah kelas segera saat DOM siap
+  document.addEventListener('DOMContentLoaded', function () {
+    document.documentElement.classList.add('init-ready');
+  });
+  // Fail-safe: kalau ada error sebelum DOMContentLoaded, tetap paksa tampil
+  setTimeout(function(){
+    document.documentElement.classList.add('init-ready');
+  }, 1500);
+</script>
+  <script>
+  setTimeout(() => document.documentElement.classList.add('init-ready'), 3000);
+  </script>
+ 
   <div class="wrap">
     <!-- Header -->
     <div class="appbar">
