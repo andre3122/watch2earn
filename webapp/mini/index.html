@@ -70,12 +70,20 @@
   video{width:100%;border-radius:12px;border:1px solid var(--line);background:#000}
 
   /* Tabs */
-  .tabs{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.7);backdrop-filter:blur(8px);
-        border-top:1px solid var(--line);padding:10px}
-  .tabbar{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:920px;margin:0 auto}
-  .tab{border-radius:16px;background:var(--pill-bg);color:var(--pill-ink);text-align:center;padding:12px 10px;font-weight:800}
-  .tab.active{outline:2px solid #d2e6ff;background:#f5f9ff}
-  .tab small{display:block;color:var(--muted);font-weight:600}
+.tabs{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.7);backdrop-filter:blur(8px);
+      border-top:1px solid var(--line);padding:10px}
+.tabbar{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:920px;margin:0 auto}
+.tab{border-radius:16px;background:var(--pill-bg);color:var(--pill-ink);text-align:center;padding:12px 10px;font-weight:800}
+.tab small{display:block;color:var(--muted);font-weight:600}
+.tab .ico{width:16px;height:16px;display:block;margin:0 auto 2px}
+.tab.active{background:#f5f9ff}
+
+/* Hilangkan garis/outline */
+.tab{border:none !important;box-shadow:none !important;}
+.tab.active{outline:none !important;border:none !important;}
+/* Opsional: hilangkan garis pemisah atas nav */
+ /* .tabs{border-top:none !important;} */
+  
   /* Tambahan kecil untuk ikon */
   .tab .ico{width:10px;height:10px;display:block;margin:0 auto 0;}
 
