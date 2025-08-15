@@ -138,9 +138,6 @@ bot.start(async (ctx) => {
   const webAppUrl = `${BASE_URL}/webapp/mini/index.html`
   await ctx.reply('Selamat datang! Buka Mini App untuk mulai.',
     Markup.inlineKeyboard([Markup.button.webApp('Open Mini App ▶️', webAppUrl)])
-  )
-  await ctx.reply(`Saldo: ${me.balance.toFixed(2)} USDT | Min WD: ${MIN_WITHDRAW} USDT\n/ref untuk link referral.\nVAST tag: ${VAST_TAG ? 'SET' : 'NOT SET'}`)
-})
 
 bot.command('ref', async (ctx) => {
   const me = getOrCreateUserFromTG(ctx.from)
