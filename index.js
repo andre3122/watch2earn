@@ -127,17 +127,24 @@ function debit(tg_id, amount, meta = {}) {
 const bot = new Telegraf(BOT_TOKEN)
 
 bot.start(async (ctx) => {
-  const payload = ctx.startPayload
-  let refBy = null
+  const payload = ctx.startPayload;
+  let refBy = null;
+
   if (payload && payload.length >= 5) {
-    const exists = db.prepare('SELECT ref_code FROM users WHERE ref_code=?').get(payload)
-    if (exists) refBy = payload
+    const exists = db.prepare('SELECT ref_code FROM users WHERE ref_code = ?').get(payload);
+    if (exists) refBy = payload;
   }
-  const me = getOrCreateUserFromTG(ctx.from, refBy)
-  const refLink = `https://t.me/${(await bot.telegram.getMe()).username}?start=${me.ref_code}`
-  const webAppUrl = `${BASE_URL}/webapp/mini/index.html`
-  await ctx.reply('Selamat datang! Buka Mini App untuk mulai.',
-    Markup.inlineKeyboard([Markup.button.webApp('Open Mini App ▶️', webAppUrl)])
+
+  const me = getOrCreateUserFromTG(ctx.from, refBy);
+  const webAppUrl = `${BASE_URL}/webapp/mini/index.html`;
+
+  await ctx.reply(
+    'Selamat datang! Buka Mini App untuk mulai.',
+    Markup.inlineKeyboard([
+      Markup.button.webApp('Open Mini App ▶️', webAppUrl)
+    ])
+  );
+});
 
 bot.command('ref', async (ctx) => {
   const me = getOrCreateUserFromTG(ctx.from)
