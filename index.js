@@ -348,12 +348,12 @@ app.post('/api/follow/claim', async (req, res) => {
     db.prepare('UPDATE users SET total_tasks = total_tasks + 1 WHERE tg_id=?').run(me.tg_id);
 
     return res.json({ ok:true, balance_delta: FOLLOW_REWARD });
-  } catch (err) {
+    } catch (err) {
     console.error('follow/claim error', err);
     return res.status(500).json({ ok:false, error:'server error' });
   }
-});
-  
+}); // penutup route follow/claim
 
+// Start server
 app.listen(PORT, () => console.log('Server on', PORT));
-                                  
+  
