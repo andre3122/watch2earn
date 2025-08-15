@@ -244,40 +244,45 @@ html.init-ready{visibility:visible}
   </div>
 
 <script>
-(function(){
+(function () {
   const tg = window.Telegram?.WebApp;
   tg && tg.expand();
 
-  // === CONFIG ===
-  const BOT_USERNAME = 'watch2earnreal_bot'; // ganti dengan bot kamu
-  const API_URL = '/api'; 
-  const TOKEN = '...';
-  const REWARD_PER_TASK = 0.01;
-  const REF_BONUS_PCT = 17; // untuk teks saja
-  const MIN_WITHDRAW = 1;
-  const VAST_TAG = ''; // isi jika punya VAST URL (opsional)
-  const FALLBACK_SEC = 15;
+  // === CONFIG (frontend) ===
+  const BOT_USERNAME     = 'watch2earnreal_bot';   // ganti kalau beda
+  const API_URL          = '/api';
+  const REWARD_PER_TASK  = 0.01;
+  const REF_BONUS_PCT    = 17;     // teks saja
+  const MIN_WITHDRAW     = 1;
+  const VAST_TAG         = '';     // kalau punya VAST URL
+  const FALLBACK_SEC     = 15;
   const CHANNEL_USERNAME = 'watch2earnreal'; // tanpa '@'
-  const FOLLOW_REWARD = 0.01;
+  const FOLLOW_REWARD    = 0.01;
 
-  // === USER ID & localStorage per user ===
-  const UID = tg?.initDataUnsafe?.user?.id || 'guest';
-  const LSKEY = `w2e_state_v2_${UID}`; // <-- storage unik per user
+  // === USER-scoped localStorage (unik per Telegram user) ===
+  const UID   = tg?.initDataUnsafe?.user?.id || 'guest';
+  const LSKEY = `w2e_state_v2_${UID}`;
 
-  // === STATE (localStorage) ===
+  // === helpers DOM aman ===
+  const el = (id) => document.getElementById(id);
+
+  // === state ===
   const state = loadState();
-  function loadState(){
+  function loadState () {
     const d = JSON.parse(localStorage.getItem(LSKEY) || '{}');
     return Object.assign({
-      balance: 0, totalEarned:0, tasksDone:0,
-      streak:0, lastCheck:'' , join: '',
-      refs:[], wallet:''
+      balance: 0, totalEarned: 0, tasksDone: 0,
+      streak: 0, lastCheck: '', join: '',
+      refs: [], wallet: ''
     }, d);
   }
-  function save(){ localStorage.setItem(LSKEY, JSON.stringify(state)); syncUI(); }
+  function save () {
+    localStorage.setItem(LSKEY, JSON.stringify(state));
+    syncUI();
+  }
 
   // init join date
-  if(!state.join){
+  if (!state.join) {
     const now = new Date();
     state.join = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
     save();
@@ -285,220 +290,276 @@ html.init-ready{visibility:visible}
 
   // header / identity
   const uname = tg?.initDataUnsafe?.user?.username || tg?.initDataUnsafe?.user?.first_name || 'User';
-  document.getElementById('userChip').textContent = uname;
-  document.getElementById('joinedTxt').textContent = `Joined ${state.join}`;
+  el('userChip').textContent = uname;
+  el('joinedTxt').textContent = `Joined ${state.join}`;
 
   // referral link
-  const uid = UID || Math.floor(100000+Math.random()*900000);
-  const refUrl = `https://t.me/${BOT_USERNAME}?start=${uid}`;
-  document.getElementById('refLink').value = refUrl;
-  document.getElementById('refLink2').value = refUrl;
-  document.getElementById('refPct').textContent = `Earn ${REF_BONUS_PCT}% of your friends’ earnings.`;
+  const refUrl = `https://t.me/${BOT_USERNAME}?start=${UID}`;
+  el('refLink').value  = refUrl;
+  el('refLink2').value = refUrl;
+  el('refPct').textContent = `Earn ${REF_BONUS_PCT}% of your friends’ earnings.`;
 
   // Profile info
-  document.getElementById('profName').textContent = uname;
-  document.getElementById('joinedDate').textContent = state.join;
-  document.getElementById('minWdTxt').textContent = MIN_WITHDRAW;
-  document.getElementById('minWdHint').textContent = MIN_WITHDRAW;
+  el('profName').textContent = uname;
+  el('joinedDate').textContent = state.join;
+  el('minWdTxt').textContent = MIN_WITHDRAW;
+  el('minWdHint').textContent = MIN_WITHDRAW;
 
   // ===== Check-in =====
   const dayRewards = [0.02,0.04,0.06,0.08,0.10,0.12,0.15];
-  const dayGrid = document.getElementById('dayGrid');
-  function buildDays(){
+  const dayGrid = el('dayGrid');
+  (function buildDays(){
     dayGrid.innerHTML = '';
-    for(let i=0;i<7;i++){
+    for (let i=0;i<7;i++){
       const d = document.createElement('div');
       d.className = 'day lock';
       d.innerHTML = `Day ${i+1}<div style="font-weight:900">${dayRewards[i]}</div>`;
       dayGrid.appendChild(d);
     }
-  }
-  buildDays();
+  })();
 
-  const btnClaim = document.getElementById('btnClaim');
-  const bar = document.getElementById('bar');
-  const claimAmt = document.getElementById('claimAmt');
-  function todayStr(){
-    const n=new Date();return `${n.getFullYear()}-${n.getMonth()+1}-${n.getDate()}`;
+  const btnClaim = el('btnClaim');
+  const bar      = el('bar');
+  const claimAmt = el('claimAmt');
+  function todayStr() {
+    const n = new Date();
+    return `${n.getFullYear()}-${n.getMonth()+1}-${n.getDate()}`;
   }
-  function updateCheckinUI(){
-    const last = state.lastCheck;
+  function updateCheckinUI () {
     const t = todayStr();
-    const canClaim = (last!==t);
+    const canClaim = (state.lastCheck !== t);
     const progress = Math.min(state.streak/7,1)*100;
     bar.style.width = progress + '%';
     claimAmt.textContent = '+' + dayRewards[(state.streak)%7].toFixed(2);
     [...dayGrid.children].forEach((el,i)=>{
       el.classList.remove('done'); el.classList.add('lock');
-      if(i < state.streak) el.classList.add('done');
-      if(i <= state.streak) el.classList.remove('lock');
+      if (i < state.streak) el.classList.add('done');
+      if (i <= state.streak) el.classList.remove('lock');
     });
     btnClaim.disabled = !canClaim;
-    btnClaim.textContent = canClaim ? `Claim ${dayRewards[(state.streak)%7].toFixed(2)} USDT` : 'Already claimed today';
+    btnClaim.textContent = canClaim
+      ? `Claim ${dayRewards[(state.streak)%7].toFixed(2)} USDT`
+      : 'Already claimed today';
   }
-  btnClaim.addEventListener('click',()=>{
+  btnClaim?.addEventListener('click', ()=>{
     const t = todayStr();
-    if(state.lastCheck===t) return;
+    if (state.lastCheck === t) return;
     const amt = dayRewards[(state.streak)%7];
-    state.balance += amt;
+    state.balance     += amt;
     state.totalEarned += amt;
-    state.streak = Math.min(state.streak+1, 7);
-    state.lastCheck = t;
+    state.streak       = Math.min(state.streak+1, 7);
+    state.lastCheck    = t;
     save();
     toast(`+${amt.toFixed(2)} USDT added`);
   });
 
-  // ===== Ads: Stream (VAST/FluidPlayer) + robust fallbacks =====
-  const playerWrap = document.getElementById('playerWrap');
-  const v = document.getElementById('player');
-  const btnStartStream = document.getElementById('btnStartStream');
-  document.getElementById('fallbackNeed').textContent = FALLBACK_SEC;
+  // ===== Ads: Stream (VAST/FluidPlayer) – aman kalau elemen tidak ada =====
+  const playerWrap     = el('playerWrap');
+  const v              = el('player');
+  const btnStartStream = el('btnStartStream');
+  const fbNeed         = el('fallbackNeed');
+  if (fbNeed) fbNeed.textContent = FALLBACK_SEC;
 
   let fp=null, fallbackTimer=null, watchdog=null, watched=0, lastT=0, rewarded=false;
 
-  function showRewardPopup(amount=REWARD_PER_TASK, via=''){
+  function showRewardPopup (amount=REWARD_PER_TASK, via=''){
     const msg = `+${amount.toFixed(2)} USDT credited${via?` (${via})`:''}.`;
-    if(tg?.showPopup){ tg.showPopup({title:'Reward',message:msg,buttons:[{type:'ok'}]}); }
+    if (tg?.showPopup) tg.showPopup({ title:'Reward', message:msg, buttons:[{type:'ok'}] });
     else alert(msg);
   }
-  function creditTask(via=''){
-    if(rewarded) return;
+  function creditTask (via=''){
+    if (rewarded) return;
     rewarded = true;
     clearInterval(fallbackTimer); clearTimeout(watchdog);
-    try{ fp && fp.destroy && fp.destroy(); }catch(e){}
-    state.balance += REWARD_PER_TASK;
+    try { fp && fp.destroy && fp.destroy(); } catch (e) {}
+    state.balance     += REWARD_PER_TASK;
     state.totalEarned += REWARD_PER_TASK;
-    state.tasksDone += 1;
+    state.tasksDone   += 1;
     save();
     showRewardPopup(REWARD_PER_TASK, via);
   }
 
-  btnStartStream.addEventListener('click', async ()=>{
-    rewarded=false; watched=0; lastT=0;
-    playerWrap.classList.remove('hidden');
-    v.innerHTML = '<source src="data:video/mp4;base64," type="video/mp4">';
+  if (btnStartStream && playerWrap && v) {
+    btnStartStream.addEventListener('click', async ()=>{
+      rewarded=false; watched=0; lastT=0;
+      playerWrap.classList.remove('hidden');
+      v.innerHTML = '<source src="data:video/mp4;base64," type="video/mp4">';
 
-    // Safety: watchdog
-    clearTimeout(watchdog);
-    watchdog = setTimeout(()=>creditTask('watchdog'), 45000);
+      clearTimeout(watchdog);
+      watchdog = setTimeout(()=>creditTask('watchdog'), 45000);
 
-    try{ fp && fp.destroy && fp.destroy(); }catch(e){}
-    if(VAST_TAG){
-      fp = fluidPlayer('player', {
-        layoutControls:{fillToContainer:true, allowDownload:false, playbackRateEnabled:false},
-        vastOptions:{ adList:[{roll:'preRoll', vastTag: VAST_TAG, skippable:true}], vpaidMode:'INSECURE', maxAllowedVastTagRedirects:5 }
-      });
-      fp.on('adEnded', ()=> creditTask('vast-end'));
-      fp.on('adError', ()=> {});
-      fp.on('adSkipped', ()=> {});
-    }
-
-    // Fallback timer — kredit setelah FALLBACK_SEC detik waktu play foreground
-    clearInterval(fallbackTimer);
-    fallbackTimer = setInterval(()=>{
-      if(!v.paused && document.visibilityState==='visible'){
-        watched++;
-        if(watched>=FALLBACK_SEC){ clearInterval(fallbackTimer); creditTask('fallback'); }
+      try { fp && fp.destroy && fp.destroy(); } catch(e){}
+      if (VAST_TAG) {
+        fp = fluidPlayer('player', {
+          layoutControls:{ fillToContainer:true, allowDownload:false, playbackRateEnabled:false },
+          vastOptions:{ adList:[{ roll:'preRoll', vastTag: VAST_TAG, skippable:true }], vpaidMode:'INSECURE', maxAllowedVastTagRedirects:5 }
+        });
+        fp.on('adEnded',   ()=> creditTask('vast-end'));
+        fp.on('adError',   ()=> {});
+        fp.on('adSkipped', ()=> {});
       }
-    },1000);
 
-    try{ await v.play(); }catch(e){}
-  });
+      clearInterval(fallbackTimer);
+      fallbackTimer = setInterval(()=>{
+        if (!v.paused && document.visibilityState==='visible') {
+          watched++;
+          if (watched >= FALLBACK_SEC) { clearInterval(fallbackTimer); creditTask('fallback'); }
+        }
+      }, 1000);
 
-  // ===== Helper reqid untuk Monetag SDK =====
-  function genReqId(){
-    return `${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+      try { await v.play(); } catch(e){}
+    });
   }
 
-  // ===== Ads: Monetag SDK buttons — kirim sub1=sub(telegram_id), sub2=reqid =====
+  // ===== Monetag SDK buttons (null-safe) =====
+  function genReqId(){ return `${Date.now()}_${Math.random().toString(36).slice(2,8)}`; }
   const g = (name)=>window[name];
 
   async function runMonetagAndCredit(runFn, label){
     rewarded=false;
     let guard = setTimeout(()=>creditTask(`${label}-guard`), 45000);
-    try{
-      await runFn();
-      creditTask(label);
-    }catch(e){
-      // biar guard yang handle jika promisenya gak resolve
-    }finally{
-      clearTimeout(guard);
-    }
+    try { await runFn(); creditTask(label); }
+    catch(e){ /* biarkan guard yg menangani */ }
+    finally { clearTimeout(guard); }
   }
 
-  document.getElementById('btnRewPopup').onclick = ()=> {
+  const btnRewPopup = el('btnRewPopup');
+  if (btnRewPopup) btnRewPopup.onclick = ()=>{
     const reqid = genReqId();
-    const fn = ()=> g('show_9711117')({ type:'pop', sub1: UID, sub2: reqid });
+    const fn = ()=> g('show_9711117')?.({ type:'pop', sub1: UID, sub2: reqid }) ?? Promise.reject();
     return runMonetagAndCredit(fn, 'popup');
   };
-  document.getElementById('btnRewInter').onclick = ()=> {
+  const btnRewInter = el('btnRewInter');
+  if (btnRewInter) btnRewInter.onclick = ()=>{
     const reqid = genReqId();
-    const fn = ()=> g('show_9711117')({ sub1: UID, sub2: reqid });
+    const fn = ()=> g('show_9711117')?.({ sub1: UID, sub2: reqid }) ?? Promise.reject();
     return runMonetagAndCredit(fn, 'interstitial');
   };
-  document.getElementById('btnInApp').onclick   = ()=> {
+  // btnInApp mungkin tidak ada – aman
+  const btnInApp = el('btnInApp');
+  if (btnInApp) btnInApp.onclick = ()=>{
     const reqid = genReqId();
-    const fn = ()=> g('show_9711117')({
+    const fn = ()=> g('show_9711117')?.({
       sub1: UID, sub2: reqid,
       type:'inApp',
       inAppSettings:{frequency:1,capping:0.1,interval:20,timeout:5,everyPage:false}
-    });
+    }) ?? Promise.reject();
     return runMonetagAndCredit(fn, 'inapp');
   };
 
-  // ===== Withdraw (demo local) =====
-  document.getElementById('btnWithdraw').addEventListener('click',()=>{
-    const amt = parseFloat((document.getElementById('wdAmt').value||'0').replace(',','.'));
-    const addr = document.getElementById('wdAddr').value.trim();
-    if(!amt || amt<MIN_WITHDRAW) return toast(`Minimum withdraw is ${MIN_WITHDRAW} USDT`, true);
-    if(amt>state.balance) return toast(`Insufficient balance`, true);
-    if(addr.length<10) return toast(`Enter a valid wallet address`, true);
+  // ===== Follow Telegram (frontend) =====
+  const followRewardTxt = el('followRewardTxt');
+  if (followRewardTxt) followRewardTxt.textContent = FOLLOW_REWARD.toFixed(2);
+
+  const btnOpenChannel  = el('btnOpenChannel');
+  if (btnOpenChannel) btnOpenChannel.onclick = ()=>{
+    const url = `https://t.me/${CHANNEL_USERNAME}`;
+    if (tg?.openTelegramLink) tg.openTelegramLink(url);
+    else window.open(url, '_blank');
+  };
+
+  const btnClaimFollow  = el('btnClaimFollow');
+  const followStat      = el('followStat');
+
+  async function apiPost(path, body){
+    const r = await fetch(`${API_URL}${path}`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify(body||{})
+    });
+    // bisa 4xx/5xx -> lempar JSON/teks ke caller
+    let data=null; try{ data=await r.json(); }catch(_){}
+    if (!r.ok) throw (data || { ok:false, error:`HTTP ${r.status}` });
+    return data;
+  }
+
+  if (btnClaimFollow) btnClaimFollow.onclick = async ()=>{
+    if (!tg?.initData) { toast('Please open from Telegram.', true); return; }
+    btnClaimFollow.disabled = true;
+    followStat.textContent = 'Checking...';
+    try {
+      const res = await apiPost('/follow/claim', { initData: tg.initData });
+      if (res?.ok) {
+        const delta = Number(res.balance_delta||0);
+        if (delta>0) {
+          state.balance     += delta;
+          state.totalEarned += delta;
+          state.tasksDone   += 1;
+          save();
+          toast(`+${delta.toFixed(2)} USDT credited (follow)`);
+          followStat.textContent = 'Reward claimed ✔';
+        } else {
+          followStat.textContent = 'Already claimed before.';
+        }
+      } else {
+        followStat.textContent = res?.error || 'Error';
+      }
+    } catch (e) {
+      const msg = (e && (e.error || e.message)) || 'Server error';
+      followStat.textContent = msg;
+      toast(msg, true);
+    } finally {
+      btnClaimFollow.disabled = false;
+    }
+  };
+
+  // ===== Withdraw (demo local) — null-safe =====
+  const btnWithdraw = el('btnWithdraw');
+  if (btnWithdraw) btnWithdraw.addEventListener('click', ()=>{
+    const amtEl  = el('wdAmt');
+    const addrEl = el('wdAddr');
+    const amt  = parseFloat((amtEl?.value||'0').replace(',','.'));
+    const addr = (addrEl?.value||'').trim();
+    if (!amt || amt < MIN_WITHDRAW) { toast(`Minimum withdraw is ${MIN_WITHDRAW} USDT`, true); return; }
+    if (amt > state.balance)        { toast(`Insufficient balance`, true); return; }
+    if (addr.length < 10)           { toast(`Enter a valid wallet address`, true); return; }
     state.balance -= amt;
     save();
     toast(`Withdrawal requested: ${amt.toFixed(2)} USDT to ${addr}`);
   });
 
-  // ===== Tabs =====
+  // ===== Tabs (aman) =====
   const screens = {
-    home: document.getElementById('screen-home'),
-    ads: document.getElementById('screen-ads'),
-    refer: document.getElementById('screen-refer'),
-    profile: document.getElementById('screen-profile'),
+    home:   el('screen-home'),
+    ads:    el('screen-ads'),
+    refer:  el('screen-refer'),
+    profile:el('screen-profile')
   };
   document.querySelectorAll('.tab').forEach(b=>{
-    b.addEventListener('click',()=>{
+    b.addEventListener('click', ()=>{
       document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
       b.classList.add('active');
-      const k=b.dataset.tab;
-      Object.entries(screens).forEach(([key,el])=>{
-        el.classList.toggle('hidden', key!==k);
+      const k = b.dataset.tab;
+      Object.entries(screens).forEach(([key,sec])=>{
+        if (sec) sec.classList.toggle('hidden', key !== k);
       });
-      window.scrollTo({top:0,behavior:'instant'});
+      window.scrollTo({ top:0, behavior:'instant' });
     });
   });
 
-  // Copy helpers
-  document.getElementById('copyRef').onclick = ()=>copy(refUrl);
-  document.getElementById('copyRef2').onclick= ()=>copy(refUrl);
-  function copy(txt){ navigator.clipboard.writeText(txt).then(()=>toast('Copied')); }
+  // Copy helpers (aman)
+  const copyRef  = el('copyRef');
+  const copyRef2 = el('copyRef2');
+  function copy (txt){ navigator.clipboard.writeText(txt).then(()=>toast('Copied')); }
+  if (copyRef)  copyRef.onclick  = ()=>copy(refUrl);
+  if (copyRef2) copyRef2.onclick = ()=>copy(refUrl);
 
-  // Toast via Telegram popup when available
-  function toast(msg, isErr=false){
-    if(tg?.showPopup){ tg.showPopup({title:isErr?'Oops':'Success',message:msg,buttons:[{type:'ok'}]}); }
+  // Toast via Telegram
+  function toast (msg, isErr=false){
+    if (tg?.showPopup) tg.showPopup({ title: isErr?'Oops':'Success', message: msg, buttons:[{type:'ok'}] });
     else alert(msg);
   }
 
-  // Sync UI with state
-  function syncUI(){
-    document.getElementById('balTop').textContent  = state.balance.toFixed(2);
-    document.getElementById('balProf').textContent = state.balance.toFixed(2);
-    document.getElementById('totalEarn').textContent = state.totalEarned.toFixed(2)+' USDT';
-    document.getElementById('tasksDone').textContent = state.tasksDone;
-    document.getElementById('streakChip').textContent = state.streak+' 🔥';
+  // Sync UI
+  function syncUI () {
+    el('balTop').textContent   = state.balance.toFixed(2);
+    el('balProf').textContent  = state.balance.toFixed(2);
+    el('totalEarn').textContent= state.totalEarned.toFixed(2)+' USDT';
+    el('tasksDone').textContent= state.tasksDone;
+    el('streakChip').textContent = state.streak + ' 🔥';
     updateCheckinUI();
   }
   syncUI();
 })();
-</script>
-</body>
-</html>
+      </script>
+  
