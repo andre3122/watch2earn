@@ -7,7 +7,7 @@
 
 <link rel="preconnect" href="https://cdn.fluidplayer.com" crossorigin>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script defer src="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js"></script>
+<script defer src="https://cdn/fluidplayer.com/v3/current/fluidplayer.min.js"></script>
 
 <!-- Monetag Mini App SDK (ganti data-zone sesuai akunmu) -->
 <script src="//libtl.com/sdk.js" data-zone="9711117" data-sdk="show_9711117"></script>
@@ -25,12 +25,12 @@
   body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.4 Inter,system-ui,Segoe UI,Roboto,Arial}
   .wrap{max-width:920px;margin:0 auto;padding:var(--pad);padding-bottom:96px}
 
-  /* Header app */
+  /* Header */
   .appbar{display:flex;align-items:center;gap:12px;margin-bottom:12px}
   .logo{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#7ee8fa,#eec0c6)}
   .title{font-weight:800;font-size:20px}
 
-  /* Pills (LEMBUT & TRANSPARAN) */
+  /* Pills (lembut & transparan) */
   .chip{margin-left:auto;border-radius:999px;padding:6px 12px;font-weight:700;
         background:rgba(11,18,32,.08);color:var(--pill-ink);border:1px solid var(--line);box-shadow:none}
   .chip small{opacity:.7;margin-left:6px}
@@ -55,7 +55,6 @@
   .g3{grid-template-columns:repeat(3,1fr)}
   @media (min-width:600px){ .g3-lg{grid-template-columns:repeat(3,1fr)} }
 
-  /* Simple vertical stack */
   .stack{display:flex;flex-direction:column;gap:10px}
 
   /* Check-in card (colorful) */
@@ -68,10 +67,9 @@
   .progress{height:8px;background:rgba(255,255,255,.35);border-radius:999px;overflow:hidden}
   .bar{height:100%;width:0;background:#34d399}
 
-  /* Video player area */
   video{width:100%;border-radius:12px;border:1px solid var(--line);background:#000}
 
-  /* Bottom nav */
+  /* Tabs */
   .tabs{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.7);backdrop-filter:blur(8px);
         border-top:1px solid var(--line);padding:10px}
   .tabbar{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:920px;margin:0 auto}
@@ -79,7 +77,6 @@
   .tab.active{outline:2px solid #d2e6ff;background:#f5f9ff}
   .tab small{display:block;color:var(--muted);font-weight:600}
 
-  /* Small helpers */
   .row{display:flex;align-items:center;gap:10px}
   .between{display:flex;align-items:center;justify-content:space-between;gap:10px}
 
@@ -88,7 +85,7 @@
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
   .hidden{display:none}
 
-  /* Profile header (username + balance pill, tanpa "Joined …") */
+  /* Profile */
   .profileHead{display:flex;align-items:center;gap:14px}
   .avatar{width:56px;height:56px;border-radius:50%;background:#eef2f7;overflow:hidden;
           display:flex;align-items:center;justify-content:center;color:#22324d;font-weight:900}
@@ -102,15 +99,14 @@
   html{visibility:hidden}
   html.init-ready{visibility:visible}
 
-  /* === HIDE CIRCLED PARTS (safe, non-breaking) === */
-  #joinedTxt { display: none !important; } /* hide "Joined ..." */
-  #screen-home > .grid.g2:first-of-type { display: none !important; } /* hide Balance + Daily Streak cards */
+  /* HIDE yang kamu minta di Home */
+  #joinedTxt { display: none !important; }
+  #screen-home > .grid.g2:first-of-type { display: none !important; }
 </style>
 </head>
 <body>
 
 <script>
-  // Tampilkan cepat agar tidak blank
   document.addEventListener('DOMContentLoaded', ()=>document.documentElement.classList.add('init-ready'));
   setTimeout(()=>document.documentElement.classList.add('init-ready'), 1500);
 </script>
@@ -173,10 +169,7 @@
 
   <!-- ADS -->
   <section id="screen-ads" class="hidden">
-    <div class="card">
-      <h3>Ads Task</h3>
-      <div class="muted">Start a task and watch till completion to earn rewards.</div>
-    </div>
+    <!-- (Dihapus: kartu "Ads Task") -->
 
     <!-- Follow Telegram Task -->
     <div class="card" style="margin-top:12px">
@@ -220,11 +213,10 @@
 
   <!-- PROFILE -->
   <section id="screen-profile" class="hidden">
-    <!-- Profile header: hanya username + pill balance -->
     <div class="card">
       <div class="profileHead">
         <div class="avatar">
-          <img id="avatarImg" alt="" loading="lazy">
+          <img id="avatarImg" alt="" loading="lazy" referrerpolicy="no-referrer">
         </div>
         <div>
           <div class="uname" id="profName">User</div>
@@ -243,7 +235,6 @@
       <div class="hint">Minimum withdraw is <span id="minWdHint">1</span> USDT.</div>
       <div style="height:10px"></div>
       <div>Wallet Address</div>
-      <!-- GANTI: TON/TRC20 -> BSC -->
       <input id="wdAddr" class="field" placeholder="Wallet address (e.g., BSC / BEP20)">
       <div class="hint">Enter the address for your selected network (e.g., BSC (BEP20) address).</div>
       <div style="height:12px"></div>
@@ -267,227 +258,134 @@
   const tg = window.Telegram?.WebApp;
   tg && tg.expand();
 
-  /** ===== CONFIG (frontend) ===== */
-  const BOT_USERNAME      = 'watch2earnreal_bot';
-  const API_URL           = '/api';
-  const REWARD_PER_TASK   = 0.01;
-  const REWARD_POPUP      = 0.00067;
-  const REWARD_INTER      = 0.01;
-  const REF_BONUS_PCT     = 17;
-  const MIN_WITHDRAW      = 1;
-  const VAST_TAG          = '';
-  const FALLBACK_SEC      = 15;
-  const CHANNEL_USERNAME  = 'watch2earnreal';
-  const FOLLOW_REWARD     = 0.01;
+  /* CONFIG */
+  const BOT_USERNAME='watch2earnreal_bot';
+  const API_URL='/api';
+  const REWARD_POPUP=0.00067, REWARD_INTER=0.01, FOLLOW_REWARD=0.01;
+  const REF_BONUS_PCT=17, MIN_WITHDRAW=1, CHANNEL_USERNAME='watch2earnreal';
 
-  /** ===== USER-scoped localStorage ===== */
-  const UID   = tg?.initDataUnsafe?.user?.id || 'guest';
-  const LSKEY = `w2e_state_v2_${UID}`;
+  /* State */
+  const UID=tg?.initDataUnsafe?.user?.id || 'guest';
+  const LSKEY=`w2e_state_v2_${UID}`;
+  const el=id=>document.getElementById(id);
+  function toast(msg,err=false){ if(tg?.showPopup) tg.showPopup({title:err?'Oops':'Success',message:msg,buttons:[{type:'ok'}]}); else alert(msg); }
+  function load(){return Object.assign({balance:0,totalEarned:0,tasksDone:0,streak:0,lastCheck:'',join:'',refs:[],wallet:''}, JSON.parse(localStorage.getItem(LSKEY)||'{}'))}
+  const state=load(); function save(){localStorage.setItem(LSKEY,JSON.stringify(state)); syncUI();}
 
-  /** ===== helpers ===== */
-  const el = id => document.getElementById(id);
-  function copy (txt){ navigator.clipboard.writeText(txt).then(()=>toast('Copied')); }
-  function toast (msg, isErr=false){
-    if (tg?.showPopup) tg.showPopup({ title:isErr?'Oops':'Success', message:msg, buttons:[{type:'ok'}] });
-    else alert(msg);
+  if(!state.join){const n=new Date();state.join=`${String(n.getDate()).padStart(2,'0')}/${String(n.getMonth()+1).padStart(2,'0')}/${n.getFullYear()}`;save();}
+
+  /* Identity & header */
+  const uname=tg?.initDataUnsafe?.user?.username || tg?.initDataUnsafe?.user?.first_name || 'User';
+  el('userChip').textContent=uname;
+  if(el('joinedTxt')) el('joinedTxt').textContent=`Joined ${state.join}`;
+  el('profName').textContent=uname;
+
+  /* Avatar (foto jika ada, fallback inisial) */
+  const avImg=document.getElementById('avatarImg');
+  const avWrap=document.querySelector('.profileHead .avatar');
+  const photoUrl=tg?.initDataUnsafe?.user?.photo_url || tg?.initData?.user?.photo_url || '';
+  function showInitial(){ if(!avWrap) return; avWrap.classList.add('avatar-initial'); avWrap.textContent=(uname?.[0]||'U').toUpperCase(); }
+  function setAvatar(url){
+    if(!url||!avImg){showInitial();return;}
+    const test=new Image(); test.referrerPolicy='no-referrer';
+    test.onload=()=>{ avImg.src=url; avImg.style.display='block'; if(avWrap) avWrap.textContent=''; };
+    test.onerror=showInitial; test.src=url;
   }
+  setAvatar(photoUrl);
+  const jd=el('joinedDate'); if(jd) jd.style.display='none';
 
-  /** ===== state ===== */
-  const state = loadState();
-  function loadState(){
-    const d = JSON.parse(localStorage.getItem(LSKEY) || '{}');
-    return Object.assign({
-      balance:0, totalEarned:0, tasksDone:0,
-      streak:0, lastCheck:'', join:'',
-      refs:[], wallet:''
-    }, d);
-  }
-  function save(){ localStorage.setItem(LSKEY, JSON.stringify(state)); syncUI(); }
+  /* Referral */
+  const refUrl=`https://t.me/${BOT_USERNAME}?start=${UID}`;
+  if(el('refLink')) el('refLink').value=refUrl;
+  if(el('refLink2')) el('refLink2').value=refUrl;
+  if(el('refPct')) el('refPct').textContent=`Earn ${REF_BONUS_PCT}% of your friends’ earnings.`;
+  if(el('copyRef')) el('copyRef').onclick=()=>navigator.clipboard.writeText(refUrl).then(()=>toast('Copied'));
+  if(el('copyRef2')) el('copyRef2').onclick=()=>navigator.clipboard.writeText(refUrl).then(()=>toast('Copied'));
 
-  if (!state.join) {
-    const now = new Date();
-    state.join = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
-    save();
-  }
-
-  const uname = tg?.initDataUnsafe?.user?.username || tg?.initDataUnsafe?.user?.first_name || 'User';
-  el('userChip').textContent = uname;
-  if (el('joinedTxt')) el('joinedTxt').textContent = `Joined ${state.join}`;
-  el('profName').textContent = uname;
-
-  // Avatar
-  const avImg  = document.getElementById('avatarImg');
-  const avWrap = document.querySelector('.profileHead .avatar');
-  const photoUrl = tg?.initDataUnsafe?.user?.photo_url;
-  function showInitial(){
-    if (!avWrap) return;
-    avWrap.classList.add('avatar-initial');
-    avWrap.textContent = (uname?.[0] || 'U').toUpperCase();
-  }
-  if (photoUrl && avImg){
-    avImg.src = photoUrl;
-    avImg.onload  = () => { avImg.style.display = 'block'; };
-    avImg.onerror = showInitial;
-  } else {
-    showInitial();
-  }
-  const jd = el('joinedDate'); if (jd) jd.style.display = 'none';
-
-  // Refer
-  const refUrl = `https://t.me/${BOT_USERNAME}?start=${UID}`;
-  if (el('refLink'))  el('refLink').value  = refUrl;
-  if (el('refLink2')) el('refLink2').value = refUrl;
-  if (el('refPct'))   el('refPct').textContent = `Earn ${REF_BONUS_PCT}% of your friends’ earnings.`;
-  if (el('copyRef'))  el('copyRef').onclick  = ()=>copy(refUrl);
-  if (el('copyRef2')) el('copyRef2').onclick = ()=>copy(refUrl);
-
-  /** ===== Check-in ===== */
-  const dayRewards = [0.02,0.04,0.06,0.08,0.10,0.12,0.15];
-  const dayGrid = el('dayGrid');
-  if (dayGrid){
-    dayGrid.innerHTML = '';
-    for (let i=0;i<7;i++){
-      const d = document.createElement('div');
-      d.className = 'day lock';
-      d.innerHTML = `Day ${i+1}<div style="font-weight:900">${dayRewards[i]}</div>`;
-      dayGrid.appendChild(d);
-    }
-  }
-  const btnClaim = el('btnClaim');
-  const bar      = el('bar');
-  const claimAmt = el('claimAmt');
-  function todayStr(){ const n=new Date(); return `${n.getFullYear()}-${n.getMonth()+1}-${n.getDate()}`; }
+  /* Check-in */
+  const dayRewards=[0.02,0.04,0.06,0.08,0.10,0.12,0.15];
+  const dayGrid=el('dayGrid');
+  if(dayGrid){ dayGrid.innerHTML=''; for(let i=0;i<7;i++){ const d=document.createElement('div'); d.className='day lock'; d.innerHTML=`Day ${i+1}<div style="font-weight:900">${dayRewards[i]}</div>`; dayGrid.appendChild(d); } }
+  const btnClaim=el('btnClaim'), bar=el('bar'), claimAmt=el('claimAmt');
+  function todayStr(){const n=new Date(); return `${n.getFullYear()}-${n.getMonth()+1}-${n.getDate()}`;}
   function updateCheckinUI(){
-    if (!bar || !dayGrid || !btnClaim || !claimAmt) return;
-    const t = todayStr();
-    const canClaim = (state.lastCheck !== t);
-    const progress = Math.min(state.streak/7,1)*100;
-    bar.style.width = progress + '%';
-    claimAmt.textContent = '+' + dayRewards[(state.streak)%7].toFixed(2);
-    [...dayGrid.children].forEach((c,i)=>{
-      c.classList.remove('done'); c.classList.add('lock');
-      if (i < state.streak) c.classList.add('done');
-      if (i <= state.streak) c.classList.remove('lock');
-    });
-    btnClaim.disabled = !canClaim;
-    btnClaim.textContent = canClaim
-      ? `Claim ${dayRewards[(state.streak)%7].toFixed(2)} USDT`
-      : 'Already claimed today';
+    if(!bar||!dayGrid||!btnClaim||!claimAmt) return;
+    const t=todayStr(); const canClaim=(state.lastCheck!==t);
+    bar.style.width=(Math.min(state.streak/7,1)*100)+'%';
+    claimAmt.textContent='+'+dayRewards[(state.streak)%7].toFixed(2);
+    [...dayGrid.children].forEach((c,i)=>{c.classList.remove('done');c.classList.add('lock'); if(i<state.streak) c.classList.add('done'); if(i<=state.streak) c.classList.remove('lock');});
+    btnClaim.disabled=!canClaim;
+    btnClaim.textContent=canClaim?`Claim ${dayRewards[(state.streak)%7].toFixed(2)} USDT`:'Already claimed today';
   }
-  if (btnClaim) btnClaim.addEventListener('click', ()=>{
-    const t = todayStr();
-    if (state.lastCheck === t) return;
-    const amt = dayRewards[(state.streak)%7];
-    state.balance += amt;
-    state.totalEarned += amt;
-    state.streak = Math.min(state.streak+1, 7);
-    state.lastCheck = t;
-    save();
-    toast(`+${amt.toFixed(2)} USDT added`);
+  if(btnClaim) btnClaim.addEventListener('click', ()=>{
+    const t=todayStr(); if(state.lastCheck===t) return;
+    const amt=dayRewards[(state.streak)%7]; state.balance+=amt; state.totalEarned+=amt; state.streak=Math.min(state.streak+1,7); state.lastCheck=t; save(); toast(`+${amt.toFixed(2)} USDT added`);
   });
 
-  /** ===== Monetag SDK ===== */
+  /* Monetag demo buttons */
   function genReqId(){ return `${Date.now()}_${Math.random().toString(36).slice(2,8)}`; }
-  const g = (name)=>window[name];
-  function creditAmount(amount, via=''){
-    state.balance += amount;
-    state.totalEarned += amount;
-    state.tasksDone += 1;
-    save();
-    toast(`+${amount.toFixed(5)} USDT credited${via?` (${via})`:''}`);
-  }
+  const g=name=>window[name];
+  function creditAmount(amount,via=''){state.balance+=amount; state.totalEarned+=amount; state.tasksDone+=1; save(); toast(`+${amount.toFixed(5)} USDT credited${via?` (${via})`:''}`);}
   async function runMonetagAndCredit(runFn, amount, label){
-    let guarded = false;
-    const guard = setTimeout(()=>{ guarded=true; creditAmount(amount, `${label}-guard`); }, 45000);
-    try{
-      await runFn();
-      if (!guarded) creditAmount(amount, label);
-    }catch(_){ /* biar guard handle */ }
-    finally{ clearTimeout(guard); }
+    let guarded=false; const guard=setTimeout(()=>{guarded=true;creditAmount(amount,`${label}-guard`);},45000);
+    try{ await runFn(); if(!guarded) creditAmount(amount,label);}catch(_){ }finally{ clearTimeout(guard); }
   }
-  const btnRewPopup = el('btnRewPopup');
-  if (btnRewPopup) btnRewPopup.onclick = ()=>{
-    const reqid = genReqId();
-    const fn = ()=> g('show_9711117')?.({ type:'pop', sub1: UID, sub2: reqid }) ?? Promise.reject();
-    return runMonetagAndCredit(fn, 0.00067, 'popup');
-  };
-  const btnRewInter = el('btnRewInter');
-  if (btnRewInter) btnRewInter.onclick = ()=>{
-    const reqid = genReqId();
-    const fn = ()=> g('show_9711117')?.({ sub1: UID, sub2: reqid }) ?? Promise.reject();
-    return runMonetagAndCredit(fn, 0.01, 'interstitial');
-  };
+  const btnRewPopup=el('btnRewPopup'); if(btnRewPopup) btnRewPopup.onclick=()=>{ const reqid=genReqId(); const fn=()=>g('show_9711117')?.({type:'pop',sub1:UID,sub2:reqid}) ?? Promise.reject(); return runMonetagAndCredit(fn, REWARD_POPUP,'popup'); };
+  const btnRewInter=el('btnRewInter'); if(btnRewInter) btnRewInter.onclick=()=>{ const reqid=genReqId(); const fn=()=>g('show_9711117')?.({sub1:UID,sub2:reqid}) ?? Promise.reject(); return runMonetagAndCredit(fn, REWARD_INTER,'interstitial'); };
 
-  /** ===== Follow Telegram ===== */
-  if (el('followRewardTxt')) el('followRewardTxt').textContent = (0.01).toFixed(2);
-  const btnOpenChannel = el('btnOpenChannel');
-  if (btnOpenChannel) btnOpenChannel.onclick = ()=>{
-    const url = `https://t.me/watch2earnreal`;
-    if (tg?.openTelegramLink) tg.openTelegramLink(url); else window.open(url,'_blank');
-  };
-  const btnClaimFollow = el('btnClaimFollow');
-  const followStat = el('followStat');
+  /* Follow Telegram */
+  if(el('followRewardTxt')) el('followRewardTxt').textContent=FOLLOW_REWARD.toFixed(2);
+  const btnOpenChannel=el('btnOpenChannel'); if(btnOpenChannel) btnOpenChannel.onclick=()=>{ const url=`https://t.me/${CHANNEL_USERNAME}`; if(tg?.openTelegramLink) tg.openTelegramLink(url); else window.open(url,'_blank'); };
+  const btnClaimFollow=el('btnClaimFollow'), followStat=el('followStat');
   async function apiPost(path, body){
-    const r = await fetch(`/api${path}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body||{}) });
-    let d=null; try{ d=await r.json(); }catch(_){}
-    if (!r.ok) throw (d || {error:`HTTP ${r.status}`});
-    return d;
+    const r=await fetch(`${API_URL}${path}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});
+    let d=null; try{d=await r.json();}catch(_){}
+    if(!r.ok) throw (d||{error:`HTTP ${r.status}`}); return d;
   }
-  if (btnClaimFollow) btnClaimFollow.onclick = async ()=>{
-    if (!tg?.initData) { toast('Please open from Telegram.', true); return; }
-    btnClaimFollow.disabled = true;
-    followStat.textContent = 'Checking...';
+  if(btnClaimFollow) btnClaimFollow.onclick=async ()=>{
+    if(!tg?.initData){ toast('Please open from Telegram.',true); return; }
+    btnClaimFollow.disabled=true; followStat.textContent='Checking...';
     try{
-      const res = await apiPost('/follow/claim', { initData: tg.initData });
-      if (res?.ok){
-        const delta = Number(res.balance_delta||0);
-        if (delta>0){ state.balance+=delta; state.totalEarned+=delta; state.tasksDone+=1; save(); followStat.textContent='Reward claimed ✔'; }
-        else { followStat.textContent='Already claimed before.'; }
-      }else{
-        followStat.textContent = res?.error || 'Error';
-      }
-    }catch(e){
-      const msg = e?.error || e?.message || 'Server error';
-      followStat.textContent = msg; toast(msg, true);
-    }finally{ btnClaimFollow.disabled = false; }
+      const res=await apiPost('/follow/claim',{initData:tg.initData});
+      if(res?.ok){ const delta=Number(res.balance_delta||0);
+        if(delta>0){ state.balance+=delta; state.totalEarned+=delta; state.tasksDone+=1; save(); followStat.textContent='Reward claimed ✔'; }
+        else followStat.textContent='Already claimed before.';
+      } else followStat.textContent=res?.error||'Error';
+    }catch(e){ const msg=e?.error||e?.message||'Server error'; followStat.textContent=msg; toast(msg,true); }
+    finally{ btnClaimFollow.disabled=false; }
   };
 
-  /** ===== Withdraw (demo local) ===== */
-  const btnWithdraw = el('btnWithdraw');
-  if (btnWithdraw) btnWithdraw.addEventListener('click', ()=>{
-    const amt = parseFloat((el('wdAmt')?.value||'0').replace(',','.'));
-    const addr= (el('wdAddr')?.value||'').trim();
-    if (!amt || amt < 1) return toast(`Minimum withdraw is 1 USDT`, true);
-    if (amt > state.balance)  return toast(`Insufficient balance`, true);
-    if (addr.length < 10)     return toast(`Enter a valid wallet address`, true);
-    state.balance -= amt; save();
-    toast(`Withdrawal requested: ${amt.toFixed(2)} USDT to ${addr}`);
+  /* Withdraw (demo local) */
+  const btnWithdraw=el('btnWithdraw'); if(btnWithdraw) btnWithdraw.addEventListener('click',()=>{
+    const amt=parseFloat((el('wdAmt')?.value||'0').replace(',','.')); const addr=(el('wdAddr')?.value||'').trim();
+    if(!amt||amt<MIN_WITHDRAW) return toast(`Minimum withdraw is ${MIN_WITHDRAW} USDT`,true);
+    if(amt>state.balance) return toast(`Insufficient balance`,true);
+    if(addr.length<10) return toast(`Enter a valid wallet address`,true);
+    state.balance-=amt; save(); toast(`Withdrawal requested: ${amt.toFixed(2)} USDT to ${addr}`);
   });
 
-  /** ===== Tabs ===== */
-  const screens = { home:el('screen-home'), ads:el('screen-ads'), refer:el('screen-refer'), profile:el('screen-profile') };
+  /* Tabs */
+  const screens={home:el('screen-home'),ads:el('screen-ads'),refer:el('screen-refer'),profile:el('screen-profile')};
   document.querySelectorAll('.tab').forEach(b=>{
-    b.addEventListener('click', ()=>{
+    b.addEventListener('click',()=>{
       document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
       b.classList.add('active');
-      const k=b.dataset.tab;
-      Object.entries(screens).forEach(([key,sec])=>{ if (sec) sec.classList.toggle('hidden', key!==k); });
+      const k=b.dataset.tab; Object.entries(screens).forEach(([key,sec])=>{ if(sec) sec.classList.toggle('hidden', key!==k); });
       window.scrollTo({top:0,behavior:'instant'});
     });
   });
 
-  /** ===== Sync UI ===== */
   function syncUI(){
-    if (el('balTop'))    el('balTop').textContent    = state.balance.toFixed(2);
-    if (el('balProf'))   el('balProf').textContent   = state.balance.toFixed(2);
-    if (el('totalEarn')) el('totalEarn').textContent = state.totalEarned.toFixed(2)+' USDT';
-    if (el('tasksDone')) el('tasksDone').textContent = state.tasksDone;
-    if (el('streakChip'))el('streakChip').textContent= state.streak+' 🔥';
+    if(el('balTop')) el('balTop').textContent=state.balance.toFixed(2);
+    if(el('balProf')) el('balProf').textContent=state.balance.toFixed(2);
+    if(el('totalEarn')) el('totalEarn').textContent=state.totalEarned.toFixed(2)+' USDT';
+    if(el('tasksDone')) el('tasksDone').textContent=state.tasksDone;
+    if(el('streakChip')) el('streakChip').textContent=state.streak+' 🔥';
     updateCheckinUI();
   }
   syncUI();
 })();
 </script>
 </body>
-          </html>
-  
+</html>
+
