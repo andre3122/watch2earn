@@ -161,17 +161,24 @@ html.init-ready{visibility:visible}
         <div class="muted">Start a task and watch till completion to earn rewards.</div>
 
         <!-- Stream Task -->
-        <div class="card" style="margin-top:12px">
-          <div class="between">
-            <div class="title">Stream Task (Video)</div>
-            <div class="muted">Fallback: <span id="fallbackNeed">15</span>s</div>
-          </div>
-          <button class="btn primary block" id="btnStartStream">Start Task</button>
-          <div id="playerWrap" class="hidden" style="margin-top:10px">
-            <video id="player" controls preload="metadata"></video>
-          </div>
-        </div>
-      </div>
+        <!-- Follow Telegram Task -->
+<div class="card" style="margin-top:12px">
+  <div class="between">
+    <div class="title">Follow Telegram</div>
+    <div class="muted">Reward: <span id="followRewardTxt">0.01</span> USDT</div>
+  </div>
+
+  <div class="muted" style="margin:6px 0 10px">
+    Join channel untuk klaim reward sekali saja.
+  </div>
+
+  <div class="grid g2">
+    <button class="btn primary" id="btnOpenChannel">Open Channel</button>
+    <button class="btn ghost" id="btnClaimFollow">Claim Reward</button>
+  </div>
+
+  <div class="hint" id="followStat" style="margin-top:8px"></div>
+</div>
 
       <!-- Completed Tasks (3 baris besar full-width) -->
       <div class="card">
@@ -179,7 +186,6 @@ html.init-ready{visibility:visible}
         <div class="stack" style="margin-top:8px">
           <button class="btn primary block" id="btnRewPopup">Rewarded Popup</button>
           <button class="btn primary block" id="btnRewInter">Rewarded Interstitial</button>
-          <button class="btn primary block" id="btnInApp">In-app Interstitial</button>
         </div>
       </div>
     </section>
@@ -244,11 +250,15 @@ html.init-ready{visibility:visible}
 
   // === CONFIG ===
   const BOT_USERNAME = 'watch2earnreal_bot'; // ganti dengan bot kamu
+  const API_URL = '/api'; 
+  const TOKEN = '...';
   const REWARD_PER_TASK = 0.01;
   const REF_BONUS_PCT = 17; // untuk teks saja
   const MIN_WITHDRAW = 1;
   const VAST_TAG = ''; // isi jika punya VAST URL (opsional)
   const FALLBACK_SEC = 15;
+  const CHANNEL_USERNAME = 'watch2earnreal'; // tanpa '@'
+  const FOLLOW_REWARD = 0.01;
 
   // === USER ID & localStorage per user ===
   const UID = tg?.initDataUnsafe?.user?.id || 'guest';
