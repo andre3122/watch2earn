@@ -310,6 +310,26 @@
   el('userChip').textContent = uname;
   el('joinedTxt').textContent = `Joined ${state.join}`;
   el('profName').textContent = uname;
+  // === Avatar: foto jika ada, fallback ke inisial ===
+const avImg  = document.getElementById('avatarImg');     // <img> di kartu profile
+const avWrap = document.getElementById('avatarWrap');    // wrapper lingkaran
+const photoUrl = tg?.initDataUnsafe?.user?.photo_url;
+
+function showInitial() {
+  if (!avWrap) return;
+  // bikin badge inisial kalau img gagal / kosong
+  avWrap.classList.add('avatar-initial');
+  avWrap.textContent = (uname?.[0] || 'U').toUpperCase();
+}
+
+if (photoUrl && avImg) {
+  avImg.src = photoUrl;
+  avImg.onload  = () => { avImg.style.display = 'block'; };
+  avImg.onerror = showInitial;
+} else {
+  showInitial();
+}
+  
   // joinedDate disembunyikan sesuai permintaan:
   const jd = el('joinedDate'); if (jd) jd.style.display = 'none';
 
