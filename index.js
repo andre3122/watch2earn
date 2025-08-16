@@ -26,11 +26,11 @@ if (!BOT_TOKEN) { console.error('Please set BOT_TOKEN in .env'); process.exit(1)
 const PORT = parseInt(process.env.PORT || '3000', 10)
 const BASE_URL = process.env.BASE_URL || ('http://localhost:' + PORT)
 
-const MIN_WITHDRAW   = parseFloat(process.env.MIN_WITHDRAW   || '1')
-const REWARD_PER_TASK= parseFloat(process.env.REWARD_PER_TASK|| '0.01')
-const REF_BONUS_PCT  = parseFloat(process.env.REF_BONUS_PCT  || '10')
-const VAST_TAG       = process.env.VAST_TAG || ''
-const POSTBACK_TOKEN = process.env.POSTBACK_TOKEN || ''
+const MIN_WITHDRAW    = parseFloat(process.env.MIN_WITHDRAW    || '1')
+const REWARD_PER_TASK = parseFloat(process.env.REWARD_PER_TASK || '0.01')
+const REF_BONUS_PCT   = parseFloat(process.env.REF_BONUS_PCT   || '10')
+const VAST_TAG        = process.env.VAST_TAG || ''
+const POSTBACK_TOKEN  = process.env.POSTBACK_TOKEN || ''
 
 // Follow-task config
 const CHANNEL_ID       = process.env.CHANNEL_ID ? parseInt(process.env.CHANNEL_ID, 10) : null
@@ -47,18 +47,15 @@ while (CHECKIN_AMOUNTS.length < 7) CHECKIN_AMOUNTS.push(0)
 /* ============ Utils umum ============ */
 const nanoid = customAlphabet('23456789ABCDEFGHJKLMNPQRSTUVWXYZ', 8)
 
-function todayUTC () {
-  // YYYY-MM-DD di zona UTC
-  return new Date().toISOString().slice(0, 10)
-}
+function todayUTC () { return new Date().toISOString().slice(0, 10) } // YYYY-MM-DD UTC
 function diffDaysUTC (aYYYYMMDD, bYYYYMMDD) {
   const a = new Date(aYYYYMMDD + 'T00:00:00Z')
   const b = new Date(bYYYYMMDD + 'T00:00:00Z')
-  return Math.round((a - b) / 86400000) // bisa negatif/positif
+  return Math.round((a - b) / 86400000)
 }
 
 function verifyInitData (initData) {
-  if (DEV_MODE) return { id: 999, username: 'dev' } // memudahkan test lokal
+  if (DEV_MODE) return { id: 999, username: 'dev' } // test lokal
   if (!initData) return null
 
   const urlParams = new URLSearchParams(initData)
@@ -115,7 +112,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   tg_id INTEGER,
   task_id TEXT,
   amount REAL,
-  status TEXT, -- pending|completed
+  status TEXT,
   created_at TEXT DEFAULT (datetime('now')),
   completed_at TEXT
 );
@@ -157,11 +154,7 @@ CREATE TABLE IF NOT EXISTS checkins (
 async function backupNow (tag = 'manual') {
   const ts = new Date().toISOString().replace(/[:.]/g, '-')
   const dest = path.join(BACKUP_DIR, `w2e-${ts}-${tag}.db`)
-  if (typeof db.backup === 'function') {
-    await db.backup(dest) // aman di WAL tanpa stop app
-  } else {
-    fs.copyFileSync(DB_FILE, dest)
-  }
+  if (typeof db.backup === 'function') { await db.backup(dest) } else { fs.copyFileSync(DB_FILE, dest) }
   return dest
 }
 
@@ -276,6 +269,7 @@ bot.launch().then(() => console.log('Bot launched')).catch(e => console.error(e)
 
 /* ============ Web server ============ */
 const app = express()
+app.set('trust proxy', 1)                // penting di Railway agar rate-limit pakai IP asli
 app.use(express.json())
 app.use('/webapp', express.static('webapp'))
 
