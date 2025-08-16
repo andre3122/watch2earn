@@ -1,9 +1,9 @@
 {
-  "name": "tele-watch2earn-mometag-miniapp",
+  "name": "watch2earn",
   "version": "0.3.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=18.17" },
+  "engines": { "node": "20.x", "npm": ">=9" },
   "scripts": {
     "dev": "node index.js",
     "start": "NODE_ENV=production node index.js",
