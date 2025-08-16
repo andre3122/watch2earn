@@ -5,7 +5,7 @@ import Database from 'better-sqlite3'
 import { customAlphabet } from 'nanoid'
 import crypto from 'crypto'
 
-// ==== Config ====
+// ==== Config (ENV) ====
 const BOT_TOKEN = process.env.BOT_TOKEN || ''
 if (!BOT_TOKEN) { console.error('Please set BOT_TOKEN in .env'); process.exit(1) }
 const PORT = parseInt(process.env.PORT || '3000', 10)
@@ -16,20 +16,21 @@ const REF_BONUS_PCT = parseFloat(process.env.REF_BONUS_PCT || '10')
 const VAST_TAG = process.env.VAST_TAG || ''
 const POSTBACK_TOKEN = process.env.POSTBACK_TOKEN || ''
 
-// === Follow-task config ===
+// Follow-task
 const CHANNEL_ID = process.env.CHANNEL_ID ? parseInt(process.env.CHANNEL_ID, 10) : null
 const CHANNEL_USERNAME = process.env.CHANNEL_USERNAME || ''
 const FOLLOW_REWARD = parseFloat(process.env.FOLLOW_REWARD || '0.01')
 
-// === Check-in rewards (7 hari siklus) ===
-const DAY_REWARDS = [0.02,0.04,0.06,0.08,0.10,0.12,0.15]
-
-// === Helpers umum ===
-const nanoid = customAlphabet('23456789ABCDEFGHJKLMNPQRSTUVWXYZ', 8)
-const todayStr = () => {
-  const n = new Date()
-  return `${n.getFullYear()}-${n.getMonth()+1}-${n.getDate()}`
+// Check-in amounts (7 hari)
+const CHECKIN_AMOUNTS = (process.env.CHECKIN_AMOUNTS || '0.02,0.04,0.06,0.08,0.10,0.12,0.15')
+  .split(',')
+  .map(s => parseFloat(s.trim()))
+  .filter(n => !isNaN(n))
+if (CHECKIN_AMOUNTS.length !== 7) {
+  throw new Error('CHECKIN_AMOUNTS must have 7 numbers (comma separated)')
 }
+
+const nanoid = customAlphabet('23456789ABCDEFGHJKLMNPQRSTUVWXYZ', 8)
 
 // ==== Utils ====
 function verifyInitData(initData) {
@@ -48,6 +49,7 @@ function verifyInitData(initData) {
   const user = JSON.parse(urlParams.get('user') || '{}')
   return user
 }
+const todayUTC = () => new Date().toISOString().slice(0,10) // YYYY-MM-DD (UTC)
 
 // ==== DB ====
 const db = new Database('data.sqlite')
@@ -86,11 +88,9 @@ CREATE TABLE IF NOT EXISTS withdrawals (
   tg_id INTEGER,
   amount REAL,
   address TEXT,
-  network TEXT,
   status TEXT DEFAULT 'pending',
   created_at TEXT DEFAULT (datetime('now')),
-  processed_at TEXT,
-  txid TEXT
+  processed_at TEXT
 );
 CREATE TABLE IF NOT EXISTS transactions (
   id INTEGER PRIMARY KEY,
@@ -99,6 +99,12 @@ CREATE TABLE IF NOT EXISTS transactions (
   amount REAL,
   meta TEXT,
   created_at TEXT DEFAULT (datetime('now'))
+);
+/* Check-in state per user */
+CREATE TABLE IF NOT EXISTS checkins (
+  tg_id INTEGER PRIMARY KEY,
+  streak INTEGER DEFAULT 0,      -- 0..7 (dikunci di 7, sama spt versi lokalmu)
+  last_claim TEXT                -- 'YYYY-MM-DD' (UTC)
 );
 CREATE TABLE IF NOT EXISTS postbacks (
   id INTEGER PRIMARY KEY,
@@ -109,24 +115,6 @@ CREATE TABLE IF NOT EXISTS postbacks (
   raw TEXT,
   created_at TEXT DEFAULT (datetime('now'))
 );
-/* check-in harian */
-CREATE TABLE IF NOT EXISTS checkins (
-  tg_id INTEGER PRIMARY KEY,
-  last_check TEXT,
-  streak INTEGER DEFAULT 0
-);
-/* idempotensi ringan */
-CREATE TABLE IF NOT EXISTS idempotency_keys (
-  key TEXT PRIMARY KEY,
-  endpoint TEXT,
-  created_at TEXT DEFAULT (datetime('now'))
-);
-
-/* Index tambahan */
-CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_unique ON tasks (tg_id, task_id);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_postbacks_reqid ON postbacks (reqid);
-CREATE INDEX IF NOT EXISTS idx_tx_user_created ON transactions (tg_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_withdraw_status ON withdrawals (status, created_at);
 `)
 
 function getOrCreateUserFromTG(user, referred_by_code = null) {
@@ -141,20 +129,15 @@ function getOrCreateUserFromTG(user, referred_by_code = null) {
     db.prepare('UPDATE users SET username=?, first_name=? WHERE tg_id=?')
       .run(user.username || null, user.first_name || null, user.id)
   }
-  // pastikan row checkins ada
+  // ensure checkin row exists
   const ck = db.prepare('SELECT 1 FROM checkins WHERE tg_id=?').get(user.id)
-  if (!ck) db.prepare('INSERT INTO checkins (tg_id, last_check, streak) VALUES (?,?,?)').run(user.id, null, 0)
+  if (!ck) db.prepare('INSERT INTO checkins (tg_id, streak, last_claim) VALUES (?,?,?)').run(user.id, 0, null)
   return row
 }
 
 function credit(tg_id, amount, type = 'credit', meta = {}) {
-  db.prepare('UPDATE users SET balance = balance + ?, total_earned = total_earned + ?, total_tasks = total_tasks + 1 WHERE tg_id=?')
+  db.prepare('UPDATE users SET balance = balance + ?, total_earned = total_earned + ? WHERE tg_id=?')
     .run(amount, amount, tg_id)
-  db.prepare('INSERT INTO transactions (tg_id, type, amount, meta) VALUES (?,?,?,?)')
-    .run(tg_id, type, amount, JSON.stringify(meta))
-}
-function creditSilent(tg_id, amount, type = 'credit', meta = {}) {
-  db.prepare('UPDATE users SET balance = balance + ? WHERE tg_id=?').run(amount, tg_id)
   db.prepare('INSERT INTO transactions (tg_id, type, amount, meta) VALUES (?,?,?,?)')
     .run(tg_id, type, amount, JSON.stringify(meta))
 }
@@ -162,18 +145,6 @@ function debit(tg_id, amount, meta = {}) {
   db.prepare('UPDATE users SET balance = balance - ? WHERE tg_id=?').run(amount, tg_id)
   db.prepare('INSERT INTO transactions (tg_id, type, amount, meta) VALUES (?,?,?,?)')
     .run(tg_id, 'debit', amount, JSON.stringify(meta))
-}
-
-// idempotency helper
-function useIdempotency(req, endpoint) {
-  const key = req.get('Idempotency-Key')
-  if (!key) return { ok: true }
-  try {
-    db.prepare('INSERT INTO idempotency_keys (key, endpoint) VALUES (?,?)').run(key, endpoint)
-    return { ok: true }
-  } catch {
-    return { ok: false, duplicate: true }
-  }
 }
 
 // ==== Bot ====
@@ -191,15 +162,12 @@ async function isMemberOfChannel(tgId) {
 bot.start(async (ctx) => {
   const payload = ctx.startPayload
   let refBy = null
-
   if (payload && payload.length >= 5) {
     const exists = db.prepare('SELECT ref_code FROM users WHERE ref_code = ?').get(payload)
     if (exists) refBy = payload
   }
-
   getOrCreateUserFromTG(ctx.from, refBy)
   const webAppUrl = `${BASE_URL}/webapp/mini/index.html`
-
   await ctx.reply(
     'Selamat datang! Buka Mini App untuk mulai.',
     Markup.inlineKeyboard([ Markup.button.webApp('Open Mini App ▶️', webAppUrl) ])
@@ -224,30 +192,7 @@ app.use('/webapp', express.static('webapp'))
 // Health
 app.get('/health', (req, res) => res.send('OK'))
 
-// === NEW: profile & balance endpoint untuk sinkron UI ===
-app.post('/api/me', (req, res) => {
-  try {
-    const { initData } = req.body || {}
-    const u = verifyInitData(initData)
-    if (!u) return res.status(403).json({ ok:false, error:'bad initData' })
-    const me = getOrCreateUserFromTG(u, null)
-
-    const ck = db.prepare('SELECT last_check, streak FROM checkins WHERE tg_id=?').get(me.tg_id)
-    return res.json({
-      ok: true,
-      balance: me.balance || 0,
-      totalEarned: me.total_earned || 0,
-      tasksDone: me.total_tasks || 0,
-      lastCheck: ck?.last_check || null,
-      streak: ck?.streak || 0
-    })
-  } catch (e) {
-    console.error('me error', e)
-    return res.status(500).json({ ok:false, error:'server error' })
-  }
-})
-
-// Config (untuk UI hints)
+// === CONFIG (+ follow_reward + checkin_amounts) ===
 app.post('/api/config', (req, res) => {
   const { initData } = req.body || {}
   const u = verifyInitData(initData)
@@ -257,6 +202,8 @@ app.post('/api/config', (req, res) => {
     ok: true,
     vastTag: VAST_TAG,
     reward: REWARD_PER_TASK,
+    follow_reward: FOLLOW_REWARD,
+    checkin_amounts: CHECKIN_AMOUNTS,
     min_withdraw: MIN_WITHDRAW,
     ref_bonus_pct: REF_BONUS_PCT,
     balance: me.balance,
@@ -264,7 +211,56 @@ app.post('/api/config', (req, res) => {
   })
 })
 
-// Start a Monetag pre-roll task
+// === CHECK-IN: status ===
+app.post('/api/checkin/status', (req, res) => {
+  const { initData } = req.body || {}
+  const u = verifyInitData(initData)
+  if (!u) return res.status(403).json({ ok:false, error:'bad initData' })
+  getOrCreateUserFromTG(u, null)
+
+  const row = db.prepare('SELECT streak, last_claim FROM checkins WHERE tg_id=?').get(u.id)
+  const last = row?.last_claim || null
+  const streak = row?.streak || 0
+  const tdy = todayUTC()
+  const can_claim = (last !== tdy)
+  const idx = streak % 7
+  const next_amount = CHECKIN_AMOUNTS[idx]
+
+  res.json({ ok:true, streak, last_claim:last, can_claim, day_rewards:CHECKIN_AMOUNTS, next_amount })
+})
+
+// === CHECK-IN: claim ===
+app.post('/api/checkin/claim', (req, res) => {
+  try{
+    const { initData } = req.body || {}
+    const u = verifyInitData(initData)
+    if (!u) return res.status(403).json({ ok:false, error:'bad initData' })
+    getOrCreateUserFromTG(u, null)
+
+    const tdy = todayUTC()
+    const row = db.prepare('SELECT streak, last_claim FROM checkins WHERE tg_id=?').get(u.id)
+    const last = row?.last_claim || null
+    let streak = row?.streak || 0
+    if (last === tdy) return res.status(400).json({ ok:false, error:'already claimed today' })
+
+    const idx = streak % 7
+    const amount = CHECKIN_AMOUNTS[idx]
+
+    // credit ke user
+    credit(u.id, amount, 'checkin', { day_index: idx })
+
+    // update streak (dikunci di 7, sama dengan versi lokal kamu)
+    streak = Math.min(streak + 1, 7)
+    db.prepare('UPDATE checkins SET streak=?, last_claim=? WHERE tg_id=?').run(streak, tdy, u.id)
+
+    res.json({ ok:true, balance_delta: amount, streak, last_claim: tdy, next_amount: CHECKIN_AMOUNTS[streak % 7] })
+  }catch(e){
+    console.error('checkin/claim error', e)
+    res.status(500).json({ ok:false, error:'server error' })
+  }
+})
+
+// === Start a Monetag pre-roll task ===
 app.post('/api/task/start', (req, res) => {
   const { initData } = req.body || {}
   const u = verifyInitData(initData)
@@ -276,7 +272,7 @@ app.post('/api/task/start', (req, res) => {
   res.json({ ok: true, task_id: taskId, min_watch_sec: 15 })
 })
 
-// Complete (fallback — sebaiknya nonaktif di prod, andalkan postback)
+// === Complete (client fallback / adEnded) ===
 app.post('/api/task/complete', (req, res) => {
   const { initData, task_id } = req.body || {}
   const u = verifyInitData(initData)
@@ -286,6 +282,7 @@ app.post('/api/task/complete', (req, res) => {
   if (!t || t.status !== 'pending') return res.status(400).json({ ok: false, error: 'task invalid' })
 
   credit(me.tg_id, t.amount, 'credit', { task_id })
+  db.prepare('UPDATE users SET total_tasks = total_tasks + 1 WHERE tg_id=?').run(me.tg_id)
   db.prepare("UPDATE tasks SET status='completed', completed_at=datetime('now') WHERE id=?").run(t.id)
 
   // referral bonus
@@ -294,11 +291,31 @@ app.post('/api/task/complete', (req, res) => {
     const inviter = db.prepare('SELECT * FROM users WHERE ref_code=?').get(userRow.referred_by)
     if (inviter) {
       const bonus = +(t.amount * (REF_BONUS_PCT / 100)).toFixed(6)
-      creditSilent(inviter.tg_id, bonus, 'ref_bonus', { from: me.tg_id, task_id })
+      credit(inviter.tg_id, bonus, 'ref_bonus', { from: me.tg_id, task_id })
+      db.prepare('INSERT INTO referrals (ref_code, invitee_tg_id, bonus) VALUES (?,?,?)')
+        .run(inviter.ref_code, me.tg_id, bonus)
     }
   }
 
   res.json({ ok: true, balance_delta: t.amount })
+})
+
+// === Withdraw ===
+app.post('/api/withdraw', (req, res) => {
+  const { initData, address } = req.body || {}
+  const u = verifyInitData(initData)
+  if (!u) return res.status(403).json({ ok: false, error: 'bad initData' })
+  const me = getOrCreateUserFromTG(u, null)
+
+  const row = db.prepare('SELECT * FROM users WHERE tg_id=?').get(me.tg_id)
+  if (row.balance < MIN_WITHDRAW) {
+    return res.status(400).json({ ok: false, error: 'min withdraw not met', balance: row.balance })
+  }
+  const amt = row.balance
+  debit(me.tg_id, amt, { reason: 'withdraw_request', address })
+  db.prepare('INSERT INTO withdrawals (tg_id, amount, address, status) VALUES (?,?,?,?)')
+    .run(me.tg_id, amt, address, 'pending')
+  res.json({ ok: true, amount: amt })
 })
 
 /** =========================
@@ -311,13 +328,11 @@ app.get('/postback/monetag', (req, res) => {
     if (!POSTBACK_TOKEN || req.query.token !== POSTBACK_TOKEN) {
       return res.status(403).send('Forbidden')
     }
-
     const reqid = String(req.query.reqid || '').trim()
     const tgId = parseInt(String(req.query.telegram_id || '').trim(), 10) || 0
     const amount = parseFloat(String(req.query.estimated_price || '0')) || 0
     const isPaid = String(req.query.is_paid || req.query.reward_event_type || '0').toLowerCase()
     const paid = (isPaid === '1' || isPaid === 'yes')
-
     if (!reqid || !tgId) return res.status(400).send('Missing params')
 
     const seen = db.prepare('SELECT 1 FROM postbacks WHERE reqid = ?').get(reqid)
@@ -332,22 +347,22 @@ app.get('/postback/monetag', (req, res) => {
         db.prepare('INSERT OR IGNORE INTO users (tg_id, ref_code) VALUES (?,?)').run(tgId, nanoid())
         me = db.prepare('SELECT * FROM users WHERE tg_id=?').get(tgId)
       }
-
       const creditAmount = amount > 0 ? amount : REWARD_PER_TASK
-      credit(me.tg_id, creditAmount, 's2s_postback', { source: 'monetag', reqid })
+      credit(tgId, creditAmount, 's2s_postback', { source: 'monetag', reqid })
+      db.prepare('UPDATE users SET total_tasks = total_tasks + 1 WHERE tg_id=?').run(tgId)
 
-      // referral bonus
       if (me?.referred_by) {
         const inviter = db.prepare('SELECT * FROM users WHERE ref_code=?').get(me.referred_by)
         if (inviter) {
           const bonus = +(creditAmount * (REF_BONUS_PCT / 100)).toFixed(6)
           if (bonus > 0) {
-            creditSilent(inviter.tg_id, bonus, 'ref_bonus', { from: me.tg_id, reqid, source: 'monetag' })
+            credit(inviter.tg_id, bonus, 'ref_bonus', { from: tgId, reqid, source: 'monetag' })
+            db.prepare('INSERT INTO referrals (ref_code, invitee_tg_id, bonus) VALUES (?,?,?)')
+              .run(inviter.ref_code, tgId, bonus)
           }
         }
       }
     }
-
     return res.status(200).send('OK')
   } catch (e) {
     console.error('postback error', e)
@@ -362,30 +377,20 @@ app.post('/api/follow/claim', async (req, res) => {
     const u = verifyInitData(initData)
     if (!u) return res.status(403).json({ ok:false, error:'bad initData' })
 
-    const idem = useIdempotency(req, '/api/follow/claim')
-    if (!idem.ok && idem.duplicate) {
-      const meNow = getOrCreateUserFromTG(u, null)
-      const existed = db.prepare(
-        "SELECT 1 FROM tasks WHERE tg_id=? AND task_id=? AND status='completed'"
-      ).get(meNow.tg_id, 'follow_tg')
-      return res.json({ ok:true, balance_delta: 0, already: !!existed })
-    }
-
     const me = getOrCreateUserFromTG(u, null)
 
     const existed = db.prepare(
       "SELECT 1 FROM tasks WHERE tg_id=? AND task_id=? AND status='completed'"
     ).get(me.tg_id, 'follow_tg')
-    if (existed) return res.json({ ok:true, balance_delta: 0, already: true })
+    if (existed) return res.json({ ok:true, balance_delta: 0 })
 
     if (!CHANNEL_ID && !CHANNEL_USERNAME) {
       return res.status(400).json({ ok:false, error:'Follow task not configured (channel missing)' })
     }
 
     let joined = false
-    try {
-      joined = await isMemberOfChannel(me.tg_id)
-    } catch (e) {
+    try { joined = await isMemberOfChannel(me.tg_id) }
+    catch (e) {
       console.error('getChatMember error', e)
       return res.status(400).json({ ok:false, error:'Bot must be in channel (prefer admin) to verify membership' })
     }
@@ -394,6 +399,7 @@ app.post('/api/follow/claim', async (req, res) => {
     credit(me.tg_id, FOLLOW_REWARD, 'follow_reward', { task_id:'follow_tg' })
     db.prepare('INSERT INTO tasks (tg_id, task_id, amount, status) VALUES (?,?,?,?)')
       .run(me.tg_id, 'follow_tg', FOLLOW_REWARD, 'completed')
+    db.prepare('UPDATE users SET total_tasks = total_tasks + 1 WHERE tg_id=?').run(me.tg_id)
 
     return res.json({ ok:true, balance_delta: FOLLOW_REWARD })
   } catch (err) {
@@ -402,102 +408,5 @@ app.post('/api/follow/claim', async (req, res) => {
   }
 })
 
-// === NEW: Check-in harian ===
-app.post('/api/checkin/claim', (req, res) => {
-  try {
-    const { initData } = req.body || {}
-    const u = verifyInitData(initData)
-    if (!u) return res.status(403).json({ ok:false, error:'bad initData' })
-
-    const idem = useIdempotency(req, '/api/checkin/claim')
-    if (!idem.ok && idem.duplicate) {
-      const ck0 = db.prepare('SELECT last_check, streak FROM checkins WHERE tg_id=?').get(u.id)
-      const t0 = todayStr()
-      const already = (ck0?.last_check === t0)
-      return res.json({ ok:true, balance_delta:0, already, streak: ck0?.streak || 0 })
-    }
-
-    getOrCreateUserFromTG(u, null)
-    const ck = db.prepare('SELECT last_check, streak FROM checkins WHERE tg_id=?').get(u.id)
-    const t = todayStr()
-    if (ck?.last_check === t) {
-      return res.json({ ok:true, balance_delta:0, already:true, streak: ck.streak || 0 })
-    }
-
-    const reward = DAY_REWARDS[(ck?.streak || 0) % 7]
-    db.prepare('UPDATE checkins SET last_check=?, streak=streak+1 WHERE tg_id=?').run(t, u.id)
-    creditSilent(u.id, reward, 'checkin', { day: (ck?.streak||0)+1, date: t })
-    db.prepare('UPDATE users SET total_earned = total_earned + ?, total_tasks = total_tasks + 1 WHERE tg_id=?').run(reward, u.id)
-
-    return res.json({ ok:true, balance_delta: reward, streak: (ck?.streak||0)+1 })
-  } catch (e) {
-    console.error('checkin error', e)
-    return res.status(500).json({ ok:false, error:'server error' })
-  }
-})
-
-// === Withdraw lama (tarik semua) — tetap ada untuk kompatibilitas
-app.post('/api/withdraw', (req, res) => {
-  const { initData, address } = req.body || {}
-  const u = verifyInitData(initData)
-  if (!u) return res.status(403).json({ ok: false, error: 'bad initData' })
-  const me = getOrCreateUserFromTG(u, null)
-
-  const row = db.prepare('SELECT * FROM users WHERE tg_id=?').get(me.tg_id)
-  if (row.balance < MIN_WITHDRAW) {
-    return res.status(400).json({ ok: false, error: 'min withdraw not met', balance: row.balance })
-  }
-  const amt = row.balance
-
-  const tx = db.transaction(() => {
-    debit(me.tg_id, amt, { reason: 'withdraw_request_full' })
-    db.prepare('INSERT INTO withdrawals (tg_id, amount, address, network, status) VALUES (?,?,?,?,?)')
-      .run(me.tg_id, amt, address, 'BSC', 'pending')
-  })
-  tx()
-
-  res.json({ ok: true, amount: amt })
-})
-
-// === NEW: Withdraw request (jumlah tertentu) ===
-app.post('/api/withdraw/request', (req, res) => {
-  try {
-    const { initData, amount, address, network='BSC' } = req.body || {}
-    const u = verifyInitData(initData)
-    if (!u) return res.status(403).json({ ok:false, error:'bad initData' })
-
-    const idem = useIdempotency(req, '/api/withdraw/request')
-    if (!idem.ok && idem.duplicate) {
-      return res.status(409).json({ ok:false, error:'Duplicate request' })
-    }
-
-    const me = getOrCreateUserFromTG(u, null)
-    const amt = Number(amount || 0)
-    if (!amt || amt < MIN_WITHDRAW) return res.status(400).json({ ok:false, error:`Minimum withdraw is ${MIN_WITHDRAW} USDT` })
-    if (!address || String(address).trim().length < 10) return res.status(400).json({ ok:false, error:'Invalid wallet address' })
-
-    const tx = db.transaction(() => {
-      const row = db.prepare('SELECT balance FROM users WHERE tg_id=?').get(me.tg_id)
-      const bal = Number(row?.balance || 0)
-      if (amt > bal) throw new Error('Insufficient balance')
-
-      db.prepare('UPDATE users SET balance=balance-? WHERE tg_id=?').run(amt, me.tg_id)
-      db.prepare('INSERT INTO withdrawals (tg_id, amount, address, network, status) VALUES (?,?,?,?,?)')
-        .run(me.tg_id, amt, address.trim(), network, 'pending')
-      db.prepare('INSERT INTO transactions (tg_id,type,amount,meta) VALUES (?,?,?,?)')
-        .run(me.tg_id, 'debit', amt, JSON.stringify({ reason: 'withdraw_request', address, network }))
-    })
-    tx()
-
-    return res.json({ ok:true, amount: amt })
-  } catch (e) {
-    const msg = e?.message || 'server error'
-    console.error('withdraw/request error', e)
-    if (msg === 'Insufficient balance') return res.status(400).json({ ok:false, error: msg })
-    return res.status(500).json({ ok:false, error:'server error' })
-  }
-})
-
 // Start server
 app.listen(PORT, () => console.log('Server on', PORT))
-                                     
