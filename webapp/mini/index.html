@@ -7,9 +7,9 @@
 
 <link rel="preconnect" href="https://cdn.fluidplayer.com" crossorigin>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script defer src="https://cdn/fluidplayer.com/v3/current/fluidplayer.min.js"></script>
+<script defer src="https://cdn.fluidplayer.com/v3/current/fluidplayer.min.js"></script>
 
-<!-- Monetag Mini App SDK (ganti data-zone sesuai akunmu) -->
+<!-- Monetag Mini App SDK -->
 <script src="//libtl.com/sdk.js" data-zone="9711117" data-sdk="show_9711117"></script>
 
 <style>
@@ -70,22 +70,17 @@
   video{width:100%;border-radius:12px;border:1px solid var(--line);background:#000}
 
   /* Tabs */
-.tabs{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.7);backdrop-filter:blur(8px);
-      border-top:1px solid var(--line);padding:10px}
-.tabbar{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:920px;margin:0 auto}
-.tab{border-radius:16px;background:var(--pill-bg);color:var(--pill-ink);text-align:center;padding:12px 10px;font-weight:800}
-.tab small{display:block;color:var(--muted);font-weight:600}
-.tab .ico{width:16px;height:16px;display:block;margin:0 auto 2px}
-.tab.active{background:#f5f9ff}
+  .tabs{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.7);backdrop-filter:blur(8px);
+        border-top:1px solid var(--line);padding:10px}
+  .tabbar{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:920px;margin:0 auto}
+  .tab{border-radius:16px;background:var(--pill-bg);color:var(--pill-ink);text-align:center;padding:12px 10px;font-weight:800}
+  .tab small{display:block;color:var(--muted);font-weight:600}
+  .tab .ico{width:16px;height:16px;display:block;margin:0 auto 2px}
+  .tab.active{background:#f5f9ff}
 
-/* Hilangkan garis/outline */
-.tab{border:none !important;box-shadow:none !important;}
-.tab.active{outline:none !important;border:none !important;}
-/* Opsional: hilangkan garis pemisah atas nav */
- /* .tabs{border-top:none !important;} */
-  
-  /* Tambahan kecil untuk ikon */
-  .tab .ico{width:16px;height:16px;display:block;margin:0 auto 0;}
+  /* Hilangkan garis/outline */
+  .tab{border:none !important;box-shadow:none !important;}
+  .tab.active{outline:none !important;border:none !important;}
 
   .row{display:flex;align-items:center;gap:10px}
   .between{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -179,9 +174,6 @@
 
   <!-- ADS -->
   <section id="screen-ads" class="hidden">
-    <!-- (Dihapus: kartu "Ads Task") -->
-
-    <!-- Follow Telegram Task -->
     <div class="card" style="margin-top:12px">
       <div class="between">
         <div class="title">Follow Telegram</div>
@@ -195,7 +187,6 @@
       <div class="hint" id="followStat" style="margin-top:8px"></div>
     </div>
 
-    <!-- Completed Tasks -->
     <div class="card">
       <h3>Completed Tasks</h3>
       <div class="stack" style="margin-top:8px">
@@ -297,95 +288,142 @@
   const tg = window.Telegram?.WebApp;
   tg && tg.expand();
 
-  /* CONFIG */
-  const BOT_USERNAME='watch2earnreal_bot';
-  const API_URL='/api';
-  const REWARD_POPUP=0.00067, REWARD_INTER=0.01, FOLLOW_REWARD=0.01;
-  const REF_BONUS_PCT=17, MIN_WITHDRAW=1, CHANNEL_USERNAME='watch2earnreal';
-
-  /* State */
-  const UID=tg?.initDataUnsafe?.user?.id || 'guest';
-  const LSKEY=`w2e_state_v2_${UID}`;
+  /* Helpers */
   const el=id=>document.getElementById(id);
   function toast(msg,err=false){ if(tg?.showPopup) tg.showPopup({title:err?'Oops':'Success',message:msg,buttons:[{type:'ok'}]}); else alert(msg); }
-  function load(){return Object.assign({balance:0,totalEarned:0,tasksDone:0,streak:0,lastCheck:'',join:'',refs:[],wallet:''}, JSON.parse(localStorage.getItem(LSKEY)||'{}'))}
-  const state=load(); function save(){localStorage.setItem(LSKEY,JSON.stringify(state)); syncUI();}
+  const initData = tg?.initData || '';
 
-  if(!state.join){const n=new Date();state.join=`${String(n.getDate()).padStart(2,'0')}/${String(n.getMonth()+1).padStart(2,'0')}/${n.getFullYear()}`;save();}
+  async function postJSON(url, body={}) {
+    const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ initData, ...body }) });
+    const d = await r.json().catch(()=>null);
+    if (!r.ok) throw (d || { error: `HTTP ${r.status}` });
+    return d;
+  }
 
-  /* Identity & header */
-  const uname=tg?.initDataUnsafe?.user?.username || tg?.initDataUnsafe?.user?.first_name || 'User';
-  el('userChip').textContent=uname;
-  if(el('joinedTxt')) el('joinedTxt').textContent=`Joined ${state.join}`;
-  el('profName').textContent=uname;
+  /* Local UI state (hanya tampilan) */
+  const UID = tg?.initDataUnsafe?.user?.id || 'guest';
+  const LSKEY = `w2e_state_v2_${UID}`;
+  const state = Object.assign({ balance:0, totalEarned:0, tasksDone:0, join:'' }, JSON.parse(localStorage.getItem(LSKEY)||'{}'));
+  function save(){ localStorage.setItem(LSKEY, JSON.stringify(state)); render(); }
 
-  /* Avatar (foto jika ada, fallback inisial) */
-  const avImg=document.getElementById('avatarImg');
-  const avWrap=document.querySelector('.profileHead .avatar');
+  /* Header & profile */
+  const uname = tg?.initDataUnsafe?.user?.username || tg?.initDataUnsafe?.user?.first_name || 'User';
+  el('userChip').textContent = uname;
+  if(!state.join){ const n=new Date(); state.join=`${String(n.getDate()).padStart(2,'0')}/${String(n.getMonth()+1).padStart(2,'0')}/${n.getFullYear()}`; save(); }
+  el('profName').textContent = uname;
+
+  // avatar
+  const avImg=document.getElementById('avatarImg'); const avWrap=document.querySelector('.profileHead .avatar');
   const photoUrl=tg?.initDataUnsafe?.user?.photo_url || tg?.initData?.user?.photo_url || '';
   function showInitial(){ if(!avWrap) return; avWrap.classList.add('avatar-initial'); avWrap.textContent=(uname?.[0]||'U').toUpperCase(); }
-  function setAvatar(url){
+  (function setAvatar(url){
     if(!url||!avImg){showInitial();return;}
     const test=new Image(); test.referrerPolicy='no-referrer';
     test.onload=()=>{ avImg.src=url; avImg.style.display='block'; if(avWrap) avWrap.textContent=''; };
     test.onerror=showInitial; test.src=url;
-  }
-  setAvatar(photoUrl);
+  })(photoUrl);
   const jd=el('joinedDate'); if(jd) jd.style.display='none';
 
-  /* Referral */
+  /* Referral link (client) */
+  const BOT_USERNAME='watch2earnreal_bot';
   const refUrl=`https://t.me/${BOT_USERNAME}?start=${UID}`;
   if(el('refLink')) el('refLink').value=refUrl;
   if(el('refLink2')) el('refLink2').value=refUrl;
-  if(el('refPct')) el('refPct').textContent=`Earn ${REF_BONUS_PCT}% of your friends’ earnings.`;
+  if(el('refPct')) el('refPct').textContent=`Earn 17% of your friends’ earnings.`;
   if(el('copyRef')) el('copyRef').onclick=()=>navigator.clipboard.writeText(refUrl).then(()=>toast('Copied'));
   if(el('copyRef2')) el('copyRef2').onclick=()=>navigator.clipboard.writeText(refUrl).then(()=>toast('Copied'));
 
-  /* Check-in */
-  const dayRewards=[0.02,0.04,0.06,0.08,0.10,0.12,0.15];
-  const dayGrid=el('dayGrid');
-  if(dayGrid){ dayGrid.innerHTML=''; for(let i=0;i<7;i++){ const d=document.createElement('div'); d.className='day lock'; d.innerHTML=`Day ${i+1}<div style="font-weight:900">${dayRewards[i]}</div>`; dayGrid.appendChild(d); } }
-  const btnClaim=el('btnClaim'), bar=el('bar'), claimAmt=el('claimAmt');
-  function todayStr(){const n=new Date(); return `${n.getFullYear()}-${n.getMonth()+1}-${n.getDate()}`;}
-  function updateCheckinUI(){
-    if(!bar||!dayGrid||!btnClaim||!claimAmt) return;
-    const t=todayStr(); const canClaim=(state.lastCheck!==t);
-    bar.style.width=(Math.min(state.streak/7,1)*100)+'%';
-    claimAmt.textContent='+'+dayRewards[(state.streak)%7].toFixed(2);
-    [...dayGrid.children].forEach((c,i)=>{c.classList.remove('done');c.classList.add('lock'); if(i<state.streak) c.classList.add('done'); if(i<=state.streak) c.classList.remove('lock');});
-    btnClaim.disabled=!canClaim;
-    btnClaim.textContent=canClaim?`Claim ${dayRewards[(state.streak)%7].toFixed(2)} USDT`:'Already claimed today';
+  /* Check-in (server-side) */
+  let dayRewards = [0.02,0.04,0.06,0.08,0.10,0.12,0.15]; // fallback
+  let checkin = { streak:0, can_claim:false, next_amount:dayRewards[0] };
+
+  function buildDayGrid(){
+    const grid = el('dayGrid'); if (!grid) return;
+    grid.innerHTML='';
+    dayRewards.forEach((amt,i)=>{
+      const d=document.createElement('div');
+      d.className='day lock';
+      d.innerHTML=`Day ${i+1}<div style="font-weight:900">${Number(amt).toFixed(2)}</div>`;
+      grid.appendChild(d);
+    });
   }
-  if(btnClaim) btnClaim.addEventListener('click', ()=>{
-    const t=todayStr(); if(state.lastCheck===t) return;
-    const amt=dayRewards[(state.streak)%7]; state.balance+=amt; state.totalEarned+=amt; state.streak=Math.min(state.streak+1,7); state.lastCheck=t; save(); toast(`+${amt.toFixed(2)} USDT added`);
+
+  function renderCheckin(){
+    const bar = el('bar'), btn = el('btnClaim'), claimAmt = el('claimAmt'), grid = el('dayGrid');
+    if (!bar || !btn || !claimAmt || !grid) return;
+    const streak = Number(checkin.streak||0);
+    const progress = Math.min(streak/7,1)*100;
+    bar.style.width = progress + '%';
+    claimAmt.textContent = '+' + Number(checkin.next_amount||0).toFixed(2);
+
+    [...grid.children].forEach((c,i)=>{
+      c.classList.remove('done'); c.classList.add('lock');
+      if (i < streak) c.classList.add('done');
+      if (i <= streak) c.classList.remove('lock');
+    });
+
+    btn.disabled = !checkin.can_claim;
+    btn.textContent = checkin.can_claim
+      ? `Claim ${Number(checkin.next_amount||0).toFixed(2)} USDT`
+      : 'Already claimed today';
+    const sc = el('streakChip'); if (sc) sc.textContent = streak + ' 🔥';
+  }
+
+  async function refreshConfigAndStatus(){
+    try{
+      const cfg = await postJSON('/api/config');
+      if (cfg?.ok){
+        state.balance = Number(cfg.balance||0);
+        state.tasksDone = Number(cfg.total_tasks||0);
+        if (el('minWdTxt'))  el('minWdTxt').textContent = Number(cfg.min_withdraw||1);
+        if (el('minWdHint')) el('minWdHint').textContent = Number(cfg.min_withdraw||1);
+        if (el('followRewardTxt')) el('followRewardTxt').textContent = Number(cfg.follow_reward||0.01).toFixed(2);
+        if (Array.isArray(cfg.checkin_amounts) && cfg.checkin_amounts.length===7) {
+          dayRewards = cfg.checkin_amounts.map(Number);
+          buildDayGrid();
+        }
+      }
+      const st = await postJSON('/api/checkin/status');
+      if (st?.ok){ checkin = st; }
+      render();
+    }catch(e){ /* diamkan */ }
+  }
+
+  // Claim click
+  const btnClaim = el('btnClaim');
+  if (btnClaim) btnClaim.addEventListener('click', async ()=>{
+    try{
+      const res = await postJSON('/api/checkin/claim');
+      if (res?.ok){
+        const delta = Number(res.balance_delta||0);
+        state.balance += delta;
+        state.totalEarned += delta;
+        checkin.streak = res.streak;
+        checkin.can_claim = false;
+        checkin.next_amount = res.next_amount;
+        save();
+        renderCheckin();
+        toast(`+${delta.toFixed(2)} USDT added`);
+      }else{
+        toast(res?.error||'Error', true);
+      }
+    }catch(e){ toast(e?.error||e?.message||'Server error', true); }
   });
 
-  /* Monetag demo buttons */
-  function genReqId(){ return `${Date.now()}_${Math.random().toString(36).slice(2,8)}`; }
-  const g=name=>window[name];
-  function creditAmount(amount,via=''){state.balance+=amount; state.totalEarned+=amount; state.tasksDone+=1; save(); toast(`+${amount.toFixed(5)} USDT credited${via?` (${via})`:''}`);}
-  async function runMonetagAndCredit(runFn, amount, label){
-    let guarded=false; const guard=setTimeout(()=>{guarded=true;creditAmount(amount,`${label}-guard`);},45000);
-    try{ await runFn(); if(!guarded) creditAmount(amount,label);}catch(_){ }finally{ clearTimeout(guard); }
-  }
-  const btnRewPopup=el('btnRewPopup'); if(btnRewPopup) btnRewPopup.onclick=()=>{ const reqid=genReqId(); const fn=()=>g('show_9711117')?.({type:'pop',sub1:UID,sub2:reqid}) ?? Promise.reject(); return runMonetagAndCredit(fn, REWARD_POPUP,'popup'); };
-  const btnRewInter=el('btnRewInter'); if(btnRewInter) btnRewInter.onclick=()=>{ const reqid=genReqId(); const fn=()=>g('show_9711117')?.({sub1:UID,sub2:reqid}) ?? Promise.reject(); return runMonetagAndCredit(fn, REWARD_INTER,'interstitial'); };
+  /* Ads (demo – kredit real via S2S/postback) */
+  const g=(name)=>window[name];
+  const UID = tg?.initDataUnsafe?.user?.id || 'guest';
+  const btnRewPopup=el('btnRewPopup'); if(btnRewPopup) btnRewPopup.onclick=()=>{ g('show_9711117')?.({ type:'pop', sub1: UID, sub2: 'pop_'+Date.now() }); toast('Ad shown. Reward will be added after server verification.'); };
+  const btnRewInter=el('btnRewInter'); if(btnRewInter) btnRewInter.onclick=()=>{ g('show_9711117')?.({ sub1: UID, sub2: 'int_'+Date.now() }); toast('Ad shown. Reward will be added after server verification.'); };
 
-  /* Follow Telegram */
-  if(el('followRewardTxt')) el('followRewardTxt').textContent=FOLLOW_REWARD.toFixed(2);
-  const btnOpenChannel=el('btnOpenChannel'); if(btnOpenChannel) btnOpenChannel.onclick=()=>{ const url=`https://t.me/${CHANNEL_USERNAME}`; if(tg?.openTelegramLink) tg.openTelegramLink(url); else window.open(url,'_blank'); };
+  /* Follow */
+  const btnOpenChannel=el('btnOpenChannel'); if(btnOpenChannel) btnOpenChannel.onclick=()=>{ const url=`https://t.me/watch2earnreal`; if(tg?.openTelegramLink) tg.openTelegramLink(url); else window.open(url,'_blank'); };
   const btnClaimFollow=el('btnClaimFollow'), followStat=el('followStat');
-  async function apiPost(path, body){
-    const r=await fetch(`${API_URL}${path}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});
-    let d=null; try{d=await r.json();}catch(_){}
-    if(!r.ok) throw (d||{error:`HTTP ${r.status}`}); return d;
-  }
   if(btnClaimFollow) btnClaimFollow.onclick=async ()=>{
     if(!tg?.initData){ toast('Please open from Telegram.',true); return; }
     btnClaimFollow.disabled=true; followStat.textContent='Checking...';
     try{
-      const res=await apiPost('/follow/claim',{initData:tg.initData});
+      const res=await postJSON('/api/follow/claim');
       if(res?.ok){ const delta=Number(res.balance_delta||0);
         if(delta>0){ state.balance+=delta; state.totalEarned+=delta; state.tasksDone+=1; save(); followStat.textContent='Reward claimed ✔'; }
         else followStat.textContent='Already claimed before.';
@@ -394,13 +432,25 @@
     finally{ btnClaimFollow.disabled=false; }
   };
 
-  /* Withdraw (demo local) */
-  const btnWithdraw=el('btnWithdraw'); if(btnWithdraw) btnWithdraw.addEventListener('click',()=>{
-    const amt=parseFloat((el('wdAmt')?.value||'0').replace(',','.')); const addr=(el('wdAddr')?.value||'').trim();
-    if(!amt||amt<MIN_WITHDRAW) return toast(`Minimum withdraw is ${MIN_WITHDRAW} USDT`,true);
-    if(amt>state.balance) return toast(`Insufficient balance`,true);
-    if(addr.length<10) return toast(`Enter a valid wallet address`,true);
-    state.balance-=amt; save(); toast(`Withdrawal requested: ${amt.toFixed(2)} USDT to ${addr}`);
+  /* Withdraw */
+  const btnWithdraw=el('btnWithdraw');
+  if (btnWithdraw) btnWithdraw.addEventListener('click', async ()=>{
+    const amt=parseFloat((el('wdAmt')?.value||'0').replace(',','.'));
+    const addr=(el('wdAddr')?.value||'').trim();
+    const min = Number(el('minWdTxt')?.textContent||'1');
+    if(!amt||isNaN(amt)) return toast('Enter a valid amount', true);
+    if(amt < min) return toast(`Minimum withdraw is ${min} USDT`, true);
+    if(amt > Number(state.balance||0)) return toast('Insufficient balance', true);
+    if(addr.length < 10) return toast('Enter a valid wallet address', true);
+    try{
+      const res = await postJSON('/api/withdraw', { address: addr });
+      if(res?.ok){
+        toast(`Withdrawal requested: ${Number(res.amount||0).toFixed(2)} USDT to ${addr}`);
+        state.balance = 0; save(); render();
+      }else{
+        toast(res?.error||'Error', true);
+      }
+    }catch(e){ toast(e?.error||'Server error', true); }
   });
 
   /* Tabs */
@@ -414,15 +464,17 @@
     });
   });
 
-  function syncUI(){
-    if(el('balTop')) el('balTop').textContent=state.balance.toFixed(2);
-    if(el('balProf')) el('balProf').textContent=state.balance.toFixed(2);
-    if(el('totalEarn')) el('totalEarn').textContent=state.totalEarned.toFixed(2)+' USDT';
-    if(el('tasksDone')) el('tasksDone').textContent=state.tasksDone;
-    if(el('streakChip')) el('streakChip').textContent=state.streak+' 🔥';
-    updateCheckinUI();
+  function render(){
+    if(el('balTop'))   el('balTop').textContent   = Number(state.balance||0).toFixed(2);
+    if(el('balProf'))  el('balProf').textContent  = Number(state.balance||0).toFixed(2);
+    if(el('totalEarn'))el('totalEarn').textContent= Number(state.totalEarned||0).toFixed(2)+' USDT';
+    if(el('tasksDone'))el('tasksDone').textContent= Number(state.tasksDone||0);
+    renderCheckin();
   }
-  syncUI();
+
+  // init
+  buildDayGrid();
+  refreshConfigAndStatus();
 })();
 </script>
 </body>
