@@ -295,32 +295,25 @@
 
   /* Helpers */
   const el=id=>document.getElementById(id);
+  const g=name=>window[name];
   function toast(msg,err=false){ if(tg?.showPopup) tg.showPopup({title:err?'Oops':'Success',message:msg,buttons:[{type:'ok'}]}); else alert(msg); }
   async function apiPost(path, body){
-    const payload = Object.assign({}, body||{}, { initData: tg?.initData || 'dev' }); // 'dev' dipakai saat DEV_MODE server
+    const payload = Object.assign({}, body||{}, { initData: tg?.initData || 'dev' });
     const r = await fetch(`${API_URL}${path}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
     let d=null; try{ d=await r.json(); }catch(_){}
     if(!r.ok) throw (d || {error:`HTTP ${r.status}`});
     return d;
   }
 
-  /* State (UI local only untuk tampilan) */
+  /* Identity */
   const UID=tg?.initDataUnsafe?.user?.id || 'guest';
-  const LSKEY=`w2e_state_v2_${UID}`;
-  function load(){return Object.assign({balance:0,totalEarned:0,tasksDone:0,streak:0,join:''}, JSON.parse(localStorage.getItem(LSKEY)||'{}'))}
-  const state=load();
-  function save(){ localStorage.setItem(LSKEY, JSON.stringify(state)); syncUI(); }
-
-  /* Identity & header */
   const uname=tg?.initDataUnsafe?.user?.username || tg?.initDataUnsafe?.user?.first_name || 'User';
   el('userChip').textContent=uname;
-  if(!state.join){ const n=new Date(); state.join=`${String(n.getDate()).padStart(2,'0')}/${String(n.getMonth()+1).padStart(2,'0')}/${n.getFullYear()}`; save(); }
   el('profName').textContent=uname;
 
   // Avatar
   const avImg=document.getElementById('avatarImg');
   const avWrap=document.querySelector('.profileHead .avatar');
-  const photoUrl=tg?.initDataUnsafe?.user?.photo_url || tg?.initData?.user?.photo_url || '';
   function showInitial(){ if(!avWrap) return; avWrap.classList.add('avatar-initial'); avWrap.textContent=(uname?.[0]||'U').toUpperCase(); }
   function setAvatar(url){
     if(!url||!avImg){showInitial();return;}
@@ -328,31 +321,39 @@
     test.onload=()=>{ avImg.src=url; avImg.style.display='block'; if(avWrap) avWrap.textContent=''; };
     test.onerror=showInitial; test.src=url;
   }
-  setAvatar(photoUrl);
-  const jd=el('joinedDate'); if(jd) jd.style.display='none';
+  setAvatar(tg?.initDataUnsafe?.user?.photo_url || tg?.initData?.user?.photo_url || '');
 
-  /* Referral */
-  const refUrl=`https://t.me/${BOT_USERNAME}?start=${UID}`;
-  if(el('refLink')) el('refLink').value=refUrl;
-  if(el('refLink2')) el('refLink2').value=refUrl;
-  if(el('copyRef')) el('copyRef').onclick=()=>navigator.clipboard.writeText(refUrl).then(()=>toast('Copied'));
-  if(el('copyRef2')) el('copyRef2').onclick=()=>navigator.clipboard.writeText(refUrl).then(()=>toast('Copied'));
+  /* ====== Server Config & Me ====== */
+  let DEV_MODE=false, FOLLOW_REWARD=0.01, MIN_WITHDRAW=1, REF_BONUS_PCT=17, CHECK_AMTS=[0.02,0.04,0.06,0.08,0.10,0.12,0.15];
+  let ME={ balance:0,total_earned:0,total_tasks:0 };
 
-  /* ====== CONFIG from server ====== */
-  let FOLLOW_REWARD = 0.01, CHECK_AMTS=[0.02,0.04,0.06,0.08,0.10,0.12,0.15], MIN_WITHDRAW=1, REF_BONUS_PCT=17;
+  function syncMeUI(){
+    if(el('balTop')) el('balTop').textContent = (+ME.balance).toFixed(2);
+    if(el('balProf')) el('balProf').textContent = (+ME.balance).toFixed(2);
+    if(el('totalEarn')) el('totalEarn').textContent = (+ME.total_earned).toFixed(2)+' USDT';
+    if(el('tasksDone')) el('tasksDone').textContent = (+ME.total_tasks);
+  }
+  async function refreshMe(){
+    try{
+      const d = await apiPost('/me',{});
+      if(d?.ok){ ME = { balance:+d.balance, total_earned:+d.total_earned, total_tasks:+d.total_tasks }; syncMeUI(); }
+    }catch(e){ /* ignore */ }
+  }
+
   async function loadConfig(){
     try{
       const cfg = await apiPost('/config',{});
       if(cfg?.ok){
-        FOLLOW_REWARD = Number(cfg.follow_reward||FOLLOW_REWARD);
+        DEV_MODE = !!cfg.dev_mode;
+        FOLLOW_REWARD = +cfg.follow_reward || FOLLOW_REWARD;
+        MIN_WITHDRAW  = +cfg.min_withdraw  || MIN_WITHDRAW;
+        REF_BONUS_PCT = +cfg.ref_bonus_pct || REF_BONUS_PCT;
         CHECK_AMTS    = (cfg.checkin_amounts||CHECK_AMTS).slice(0,7);
-        MIN_WITHDRAW  = Number(cfg.min_withdraw||MIN_WITHDRAW);
-        REF_BONUS_PCT = Number(cfg.ref_bonus_pct||REF_BONUS_PCT);
         if(el('followRewardTxt')) el('followRewardTxt').textContent = FOLLOW_REWARD.toFixed(2);
         if(el('minWdTxt')) el('minWdTxt').textContent = MIN_WITHDRAW;
         if(el('minWdHint')) el('minWdHint').textContent = MIN_WITHDRAW;
         if(el('refPct')) el('refPct').textContent = `Earn ${REF_BONUS_PCT}% of your friends’ earnings.`;
-        // Day grid
+        // grid 7 hari
         const dayGrid = el('dayGrid');
         if(dayGrid){ dayGrid.innerHTML='';
           for(let i=0;i<7;i++){
@@ -372,10 +373,9 @@
     try{
       const st = await apiPost('/checkin/status',{});
       if(!st?.ok) throw st;
-      // Update UI
-      const streak = Number(st.streak||0);
+      const streak = +st.streak||0;
       const can = !!st.can_claim;
-      const nextAmt = Number(st.next_amount||0);
+      const nextAmt = +st.next_amount||0;
       if(bar) bar.style.width = (Math.min(streak/7,1)*100)+'%';
       if(claimAmt) claimAmt.textContent = '+'+nextAmt.toFixed(2);
       if(btnClaim){
@@ -397,11 +397,8 @@
       btnClaim.disabled = true;
       const res = await apiPost('/checkin/claim',{});
       if(res?.ok){
-        const delta = Number(res.balance_delta||0);
-        state.totalEarned += delta;
-        state.balance += delta;
-        save();
-        toast(`+${delta.toFixed(2)} USDT added`);
+        toast(`+${(+res.balance_delta||0).toFixed(2)} USDT added`);
+        await refreshMe();
         await loadCheckin();
       }else{
         toast(res?.error||'Error', true);
@@ -413,27 +410,50 @@
     }
   });
 
-  /* ====== Ads: Monetag demo ====== */
+  /* ====== Ads (server-validated via S2S) ====== */
   function genReqId(){ return `${Date.now()}_${Math.random().toString(36).slice(2,8)}`; }
-  const g=name=>window[name];
-  function creditAmount(amount, via=''){
-    state.balance += amount; state.totalEarned += amount; state.tasksDone += 1; save();
-    toast(`+${amount.toFixed(5)} USDT credited${via?` (${via})`:''}`);
-  }
-  async function runMonetagAndCredit(runFn, amount, label){
-    let guarded=false; const guard=setTimeout(()=>{guarded=true;creditAmount(amount, `${label}-guard`);}, 45000);
-    try{ await runFn(); if(!guarded) creditAmount(amount, label); }catch(_){ } finally{ clearTimeout(guard); }
-  }
-  const btnRewPopup=el('btnRewPopup'); if(btnRewPopup) btnRewPopup.onclick=()=>{
-    const reqid=genReqId(); const fn=()=> g('show_9711117')?.({ type:'pop', sub1: UID, sub2: reqid }) ?? Promise.reject();
-    return runMonetagAndCredit(fn, 0.00067, 'popup');
-  };
-  const btnRewInter=el('btnRewInter'); if(btnRewInter) btnRewInter.onclick=()=>{
-    const reqid=genReqId(); const fn=()=> g('show_9711117')?.({ sub1: UID, sub2: reqid }) ?? Promise.reject();
-    return runMonetagAndCredit(fn, 0.01, 'interstitial');
-  };
+  function wait(ms){ return new Promise(r=>setTimeout(r, ms)); }
 
-  /* ====== Follow Telegram ====== */
+  async function showMonetag(opts){
+    // aman kalau SDK ga return promise
+    try{
+      const fn = g('show_9711117');
+      const r = fn?.(opts);
+      if (r && typeof r.then === 'function') await r;
+    }catch(_){}
+  }
+
+  async function runRewarded(label){
+    // 1) snapshot sebelum nonton
+    const before = { ...ME };
+    const reqid = genReqId();
+
+    // 2) trigger iklan (sub1 = telegram_id, sub2 = reqid)
+    const sdkOpts = (label === 'popup')
+      ? { type:'pop', sub1: UID, sub2: reqid }
+      : { sub1: UID, sub2: reqid };
+    showMonetag(sdkOpts).catch(()=>{ /* no-op */ });
+
+    // 3) polling state dari server (menunggu postback mem-credit)
+    const deadline = Date.now()+90000; // 90s
+    let credited = false;
+    while(Date.now() < deadline){
+      await wait(3000);
+      await refreshMe();
+      if (ME.total_tasks > before.total_tasks || ME.balance > before.balance) { credited=true; break; }
+    }
+    if (credited) {
+      const delta = (ME.balance - before.balance);
+      toast(`+${delta.toFixed(6)} USDT credited (server)`);
+    } else {
+      toast('Ad completed. Reward is being processed by server. Try again in a moment.', false);
+    }
+  }
+
+  const btnRewPopup=el('btnRewPopup'); if(btnRewPopup) btnRewPopup.onclick=()=>runRewarded('popup');
+  const btnRewInter=el('btnRewInter'); if(btnRewInter) btnRewInter.onclick=()=>runRewarded('inter');
+
+  /* ====== Follow Telegram (server) ====== */
   const CHANNEL_USERNAME='watch2earnreal';
   const btnOpenChannel=el('btnOpenChannel'); if(btnOpenChannel) btnOpenChannel.onclick=()=>{
     const url=`https://t.me/${CHANNEL_USERNAME}`;
@@ -446,8 +466,9 @@
     try{
       const res = await apiPost('/follow/claim',{});
       if(res?.ok){
-        const delta = Number(res.balance_delta||0);
-        if(delta>0){ state.balance+=delta; state.totalEarned+=delta; state.tasksDone+=1; save(); if(followStat) followStat.textContent='Reward claimed ✔'; }
+        await refreshMe();
+        const d = +res.balance_delta||0;
+        if (d > 0){ if(followStat) followStat.textContent='Reward claimed ✔'; toast(`+${d.toFixed(2)} USDT`); }
         else { if(followStat) followStat.textContent='Already claimed before.'; }
       }else{
         if(followStat) followStat.textContent = res?.error || 'Error';
@@ -458,15 +479,21 @@
     }finally{ btnClaimFollow.disabled=false; }
   };
 
-  /* ====== Withdraw (demo lokal) ====== */
-  const btnWithdraw=el('btnWithdraw'); if(btnWithdraw) btnWithdraw.addEventListener('click',()=>{
+  /* ====== Withdraw (server) ====== */
+  const btnWithdraw=el('btnWithdraw'); if(btnWithdraw) btnWithdraw.addEventListener('click',async ()=>{
     const amt=parseFloat((el('wdAmt')?.value||'0').replace(',','.'));
     const addr=(el('wdAddr')?.value||'').trim();
-    if(!amt || amt < (window.MIN_WITHDRAW || 1)) return toast(`Minimum withdraw is ${window.MIN_WITHDRAW || 1} USDT`, true);
-    if(amt > state.balance) return toast(`Insufficient balance`, true);
-    if(addr.length < 10) return toast(`Enter a valid wallet address`, true);
-    state.balance -= amt; save();
-    toast(`Withdrawal requested: ${amt.toFixed(2)} USDT to ${addr}`);
+    try{
+      const res = await apiPost('/withdraw',{ amount: amt, address: addr });
+      if(res?.ok){
+        toast(`Withdrawal requested: ${(+res.amount).toFixed(2)} USDT`);
+        await refreshMe();
+      }else{
+        toast(res?.error || 'Withdraw error', true);
+      }
+    }catch(e){
+      toast(e?.error || 'Withdraw error', true);
+    }
   });
 
   /* Tabs */
@@ -481,20 +508,13 @@
     });
   });
 
-  function syncUI(){
-    if(el('balTop')) el('balTop').textContent=state.balance.toFixed(2);
-    if(el('balProf')) el('balProf').textContent=state.balance.toFixed(2);
-    if(el('totalEarn')) el('totalEarn').textContent=state.totalEarned.toFixed(2)+' USDT';
-    if(el('tasksDone')) el('tasksDone').textContent=state.tasksDone;
-    if(el('streakChip')) el('streakChip').textContent='— 🔥';
-  }
-
   // Bootstrap
   (async function init(){
-    syncUI();
     await loadConfig();
-    window.MIN_WITHDRAW = MIN_WITHDRAW;
+    await refreshMe();
     await loadCheckin();
+    // auto refresh tiap 15s biar UI ke-sync sama server
+    setInterval(refreshMe, 15000);
   })();
 
 })();
