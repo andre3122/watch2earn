@@ -4,7 +4,45 @@ import { Telegraf, Markup } from 'telegraf'
 import Database from 'better-sqlite3'
 import { customAlphabet } from 'nanoid'
 import crypto from 'crypto'
+import helmet from 'helmet'
+import rateLimit from 'express-rate-limit'
+import morgan from 'morgan'
+import fs from 'fs';
+import path from 'path';
+import Database from 'better-sqlite3';
 
+const DB_FILE = process.env.DB_PATH || 'data.sqlite';
+const BACKUP_DIR = process.env.BACKUP_DIR || 'backup';
+fs.mkdirSync(BACKUP_DIR, { recursive: true });
+
+const db = new Database(DB_FILE);
+db.pragma('journal_mode = WAL');
+
+const ts = new Date().toISOString().replace(/[:.]/g, '-');
+const dest = path.join(BACKUP_DIR, `w2e-${ts}-cli.db`);
+
+(async () => {
+  try {
+    if (typeof db.backup === 'function') {
+      await db.backup(dest);
+    } else {
+      fs.copyFileSync(DB_FILE, dest);
+    }
+    console.log('OK =>', dest);
+    process.exit(0);
+  } catch (e) {
+    console.error('Backup failed:', e);
+    process.exit(1);
+  }
+})();
+
+// ==== Flags keamanan/opsi ====
+const DEV_MODE = String(process.env.DEV_MODE || 'false').toLowerCase() === 'true'
+const ALLOW_CLIENT_FALLBACK = String(process.env.ALLOW_CLIENT_FALLBACK || 'false').toLowerCase() === 'true'
+const ADMIN_IDS = (process.env.ADMIN_IDS || '')
+  .split(',')
+  .map(s => parseInt(s.trim(),10))
+  .filter(Boolean)
 /* ============ Config ============ */
 const BOT_TOKEN = process.env.BOT_TOKEN || ''
 if (!BOT_TOKEN) { console.error('Please set BOT_TOKEN in .env'); process.exit(1) }
@@ -37,12 +75,19 @@ const nanoid = customAlphabet('23456789ABCDEFGHJKLMNPQRSTUVWXYZ', 8)
 /* ============ Utils ============ */
 function verifyInitData(initData) {
   if (DEV_MODE) {
-    // Dev user mock — HANYA untuk dev lokal
+    // Bolehkan identitas dummy saat dev lokal
     return { id: 999, username: 'dev' }
   }
   if (!initData) return null
+
   const urlParams = new URLSearchParams(initData)
   const hash = urlParams.get('hash')
+  const authDate = parseInt(urlParams.get('auth_date') || '0', 10)
+
+  // Tolak kalau lebih dari 24 jam
+  const nowSec = Math.floor(Date.now()/1000)
+  if (!authDate || (nowSec - authDate) > 86400) return null
+
   urlParams.delete('hash')
   const data = []
   for (const [k, v] of Array.from(urlParams.entries()).sort((a,b)=>a[0].localeCompare(b[0]))) {
@@ -52,19 +97,20 @@ function verifyInitData(initData) {
   const secretKey = crypto.createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest()
   const hmac = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex')
   if (hmac !== hash) return null
+
   const user = JSON.parse(urlParams.get('user') || '{}')
   return user
 }
-const todayUTC = () => new Date().toISOString().slice(0,10)
-const diffDaysUTC = (a,b) => {
-  const A = new Date(a+'T00:00:00Z').getTime()
-  const B = new Date(b+'T00:00:00Z').getTime()
-  return Math.round((A - B) / 86400000)
-}
+
 
 /* ============ DB ============ */
-const db = new Database('data.sqlite')
-db.pragma('journal_mode = WAL')
+// Path DB & folder backup (ambil dari ENV kalau ada)
+const DB_FILE   = process.env.DB_PATH || 'data.sqlite';
+const BACKUP_DIR = process.env.BACKUP_DIR || 'backup';
+fs.mkdirSync(BACKUP_DIR, { recursive: true });
+
+const db = new Database(DB_FILE);
+db.pragma('journal_mode = WAL');
 db.exec(`
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY,
@@ -126,6 +172,26 @@ CREATE TABLE IF NOT EXISTS checkins (
   last_claim TEXT
 );
 `)
+// === Backup util ===
+async function backupNow(tag = 'manual') {
+  const ts = new Date().toISOString().replace(/[:.]/g, '-');
+  const dest = path.join(BACKUP_DIR, `w2e-${ts}-${tag}.db`);
+
+  // Gunakan API backup bawaan better-sqlite3 (lebih aman, online)
+  if (typeof db.backup === 'function') {
+    await db.backup(dest);
+  } else {
+    // Fallback copy file (kurang ideal, tetapi ok dengan WAL)
+    fs.copyFileSync(DB_FILE, dest);
+  }
+  return dest;
+}
+try {
+  const cols = db.prepare(`PRAGMA table_info(withdrawals)`).all()
+  if (!cols.find(c => c.name === 'tx_hash')) {
+    db.prepare(`ALTER TABLE withdrawals ADD COLUMN tx_hash TEXT`).run()
+  }
+} catch (_) {}
 
 function getOrCreateUserFromTG(user, referred_by_code = null) {
   let row = db.prepare('SELECT * FROM users WHERE tg_id=?').get(user.id)
@@ -189,6 +255,36 @@ bot.command('ref', async (ctx) => {
   const bonus = db.prepare('SELECT COALESCE(SUM(bonus),0) as s FROM referrals WHERE ref_code=?').get(me.ref_code).s
   ctx.reply(`👥 Referral\nJumlah teman: ${count}\nBonus: ${Number(bonus).toFixed(2)} USDT\n${refLink}`)
 })
+function isAdmin(id){ return ADMIN_IDS.includes(id) }
+bot.command('backup', async (ctx) => {
+  if (!isAdmin(ctx.from.id)) return;
+  try {
+    const file = await backupNow('tg'); // nama file: w2e-<timestamp>-tg.db
+    await ctx.replyWithDocument({ source: file, filename: path.basename(file) });
+  } catch (e) {
+    await ctx.reply('Backup failed: ' + (e?.message || e));
+  }
+});
+bot.command('wd_pending', (ctx)=>{
+  if(!isAdmin(ctx.from.id)) return
+  const rows = db.prepare(`SELECT id, tg_id, amount, address, created_at FROM withdrawals WHERE status='pending' ORDER BY id DESC LIMIT 20`).all()
+  if (!rows.length) return ctx.reply('No pending withdrawals.')
+  const lines = rows.map(r => `#${r.id} | ${r.amount} USDT | ${r.address} | tg:${r.tg_id} | ${r.created_at}`)
+  ctx.reply(lines.join('\n'))
+})
+
+// /wd_paid <id> <txhash>
+bot.command('wd_paid', (ctx)=>{
+  if(!isAdmin(ctx.from.id)) return
+  const parts = (ctx.message.text||'').trim().split(/\s+/)
+  if (parts.length < 3) return ctx.reply('Usage: /wd_paid <id> <txhash>')
+  const wid = parseInt(parts[1],10)
+  const tx  = parts[2]
+  const row = db.prepare(`SELECT * FROM withdrawals WHERE id=? AND status='pending'`).get(wid)
+  if(!row) return ctx.reply('Not found or not pending.')
+  db.prepare(`UPDATE withdrawals SET status='processed', processed_at=datetime('now'), tx_hash=? WHERE id=?`).run(tx, wid)
+  ctx.reply(`OK, marked #${wid} paid. tx=${tx}`)
+})
 bot.launch().then(() => console.log('Bot launched')).catch(e => console.error(e))
 
 /* ============ Web server ============ */
@@ -197,7 +293,36 @@ app.use(express.json())
 app.use('/webapp', express.static('webapp'))
 
 app.get('/health', (_, res) => res.send('OK'))
+app.use(helmet({ contentSecurityPolicy: false }))     // Security headers
+app.use(morgan('combined'))                           // Logging basic
+// Admin-only HTTP trigger for backup
+app.post('/admin/backup', async (req, res) => {
+  // Gate sederhana pakai token di header
+  const token = String(req.headers['x-admin-token'] || '')
+  if (token !== String(process.env.ADMIN_TOKEN || '')) {
+    return res.status(403).json({ ok: false, error: 'forbidden' })
+  }
+  try {
+    const file = await backupNow('api')
+    return res.json({ ok: true, file })
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: String(e) })
+  }
+})
+// Global limiter untuk /api
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 menit
+  max: 60,             // 60 req/ip/menit
+  standardHeaders: true,
+  legacyHeaders: false
+})
+app.use('/api', apiLimiter)
 
+// Limiter ekstra untuk endpoint sensitif
+const strictLimiter = rateLimit({ windowMs: 60 * 1000, max: 5 })
+app.use('/api/checkin/claim', strictLimiter)
+app.use('/api/withdraw', strictLimiter)
+app.use('/api/task', strictLimiter) // mencakup /api/task/start & /api/task/complete
 // Config untuk client
 app.post('/api/config', (req, res) => {
   const { initData } = req.body || {}
@@ -267,47 +392,70 @@ app.post('/api/task/start', (req, res) => {
   res.json({ ok:true, task_id: taskId, min_watch_sec: 15 })
 })
 
-app.post('/api/task/complete', (req, res) => {
-  const { initData, task_id } = req.body || {}
-  const u = verifyInitData(initData)
-  if (!u) return res.status(403).json({ ok:false, error:'bad initData' })
-  const me = getOrCreateUserFromTG(u, null)
-  const t = db.prepare('SELECT * FROM tasks WHERE task_id=? AND tg_id=?').get(task_id, me.tg_id)
-  if (!t || t.status !== 'pending') return res.status(400).json({ ok:false, error:'task invalid' })
+// ===== Client fallback untuk task complete (NONAKTIF di production) =====
+if (ALLOW_CLIENT_FALLBACK) {
+  app.post('/api/task/complete', (req, res) => {
+    const { initData, task_id } = req.body || {};
+    const u = verifyInitData(initData);
+    if (!u) return res.status(403).json({ ok:false, error:'bad initData' });
 
-  credit(me.tg_id, t.amount, 'credit', { task_id })
-  db.prepare('UPDATE users SET total_tasks = total_tasks + 1 WHERE tg_id=?').run(me.tg_id)
-  db.prepare("UPDATE tasks SET status='completed', completed_at=datetime('now') WHERE id=?").run(t.id)
+    const me = getOrCreateUserFromTG(u, null);
+    const t = db.prepare('SELECT * FROM tasks WHERE task_id=? AND tg_id=?').get(task_id, me.tg_id);
+    if (!t || t.status !== 'pending') return res.status(400).json({ ok:false, error:'task invalid' });
 
-  const userRow = db.prepare('SELECT * FROM users WHERE tg_id=?').get(me.tg_id)
-  if (userRow?.referred_by) {
-    const inviter = db.prepare('SELECT * FROM users WHERE ref_code=?').get(userRow.referred_by)
-    if (inviter) {
-      const bonus = +(t.amount * (REF_BONUS_PCT / 100)).toFixed(6)
-      credit(inviter.tg_id, bonus, 'ref_bonus', { from: me.tg_id, task_id })
-      db.prepare('INSERT INTO referrals (ref_code, invitee_tg_id, bonus) VALUES (?,?,?)')
-        .run(inviter.ref_code, me.tg_id, bonus)
+    credit(me.tg_id, t.amount, 'credit', { task_id });
+    db.prepare('UPDATE users SET total_tasks = total_tasks + 1 WHERE tg_id=?').run(me.tg_id);
+    db.prepare("UPDATE tasks SET status='completed', completed_at=datetime('now') WHERE id=?").run(t.id);
+
+    // referral bonus
+    const userRow = db.prepare('SELECT * FROM users WHERE tg_id=?').get(me.tg_id);
+    if (userRow?.referred_by) {
+      const inviter = db.prepare('SELECT * FROM users WHERE ref_code=?').get(userRow.referred_by);
+      if (inviter) {
+        const bonus = +(t.amount * (REF_BONUS_PCT / 100)).toFixed(6);
+        credit(inviter.tg_id, bonus, 'ref_bonus', { from: me.tg_id, task_id });
+        db.prepare('INSERT INTO referrals (ref_code, invitee_tg_id, bonus) VALUES (?,?,?)')
+          .run(inviter.ref_code, me.tg_id, bonus);
+      }
     }
-  }
-  res.json({ ok:true, balance_delta: t.amount })
-})
+
+    res.json({ ok:true, balance_delta: t.amount });
+  });
+} else {
+  // Produksi: benar-benar dimatikan (tidak bisa dipakai spoofing)
+  app.post('/api/task/complete', (_req, res) => {
+    return res.status(404).json({ ok:false, error:'disabled_in_prod' });
+  });
+}
+
 
 /* ======= Withdraw ======= */
 app.post('/api/withdraw', (req, res) => {
-  const { initData, address } = req.body || {}
+  const { initData, address, network = 'BSC' } = req.body || {}
   const u = verifyInitData(initData)
   if (!u) return res.status(403).json({ ok:false, error:'bad initData' })
   const me = getOrCreateUserFromTG(u, null)
 
-  const row = db.prepare('SELECT * FROM users WHERE tg_id=?').get(me.tg_id)
+  // Validasi alamat BSC/EVM (0x + 40 hex)
+  const evmAddr = /^0x[a-fA-F0-9]{40}$/
+  if (network.toUpperCase() === 'BSC' && !evmAddr.test(String(address||'').trim())) {
+    return res.status(400).json({ ok:false, error:'Invalid BSC address' })
+  }
+
+  // Tolak kalau masih punya pending
+  const hasPending = db.prepare(`SELECT 1 FROM withdrawals WHERE tg_id=? AND status='pending'`).get(me.tg_id)
+  if (hasPending) return res.status(400).json({ ok:false, error:'You already have a pending withdrawal' })
+
+  const row = db.prepare('SELECT balance FROM users WHERE tg_id=?').get(me.tg_id)
   if (row.balance < MIN_WITHDRAW) {
     return res.status(400).json({ ok:false, error:'min withdraw not met', balance: row.balance })
   }
+
   const amt = row.balance
-  debit(me.tg_id, amt, { reason: 'withdraw_request' })
+  debit(me.tg_id, amt, { reason: 'withdraw_request', network })
   db.prepare('INSERT INTO withdrawals (tg_id, amount, address, status) VALUES (?,?,?,?)')
-    .run(me.tg_id, amt, address, 'pending')
-  res.json({ ok:true, amount: amt })
+    .run(me.tg_id, amt, String(address||'').trim(), 'pending')
+  return res.json({ ok:true, amount: amt })
 })
 
 /* ======= Monetag Postback ======= */
